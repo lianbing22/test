@@ -107,6 +107,25 @@ async function loadSelectedModel(modelName) {
             newModelInstance = await tf.loadGraphModel(modelUrl);
             // We'll need a way to know the model type for later detection logic
             newModelInstance.isGraphModel = true; // Custom flag
+            newModelInstance.modelType = "mobileNetSsd"; // Specific type
+        } else if (modelName === "yoloV5s") {
+            // IMPORTANT: This is an example URL from a community-converted model.
+            // Its availability, correctness, and performance are not guaranteed.
+            // It might be necessary to find a more robust or self-hosted model URL.
+            // This model is expected to be a TFJS GraphModel.
+            const modelUrl = 'https://raw.githubusercontent.com/zldrobit/yolov5/tfjs_graph_model/model_yolov5s_tfjs/model.json';
+            
+            console.log(`Attempting to load YOLOv5s from: ${modelUrl}`);
+            newModelInstance = await tf.loadGraphModel(modelUrl);
+            newModelInstance.isGraphModel = true;
+            newModelInstance.modelType = "yoloV5s"; // Specific type for dispatching pre/post processing
+            // Common input shape for YOLOv5s is 640x640. This should be confirmed based on the model.
+            newModelInstance.inputShape = [1, 640, 640, 3]; // Format: [batch, height, width, channels]
+            console.log("YOLOv5s model loaded structure:", newModelInstance);
+
+            // You might want to log model.inputs and model.outputs to understand its expected signature
+            // console.log("YOLOv5s inputs:", newModelInstance.inputs);
+            // console.log("YOLOv5s outputs:", newModelInstance.outputs);
         } else {
             throw new Error(`未知模型: ${modelName}`);
         }
@@ -197,42 +216,64 @@ function clearAllMediaAndResults() {
 
 async function detectObjects() {
     if (!isDetecting) return;
-    if (!activeModel.instance) return; // No model loaded
+    if (!activeModel.instance) {
+        console.warn("detectObjects: No active model instance.");
+        requestAnimationFrame(detectObjects); // Keep the loop going but do nothing
+        return;
+    }
 
     let predictions = [];
-    if (activeModel.instance.isGraphModel) {
-        const inputTensor = preprocessInput(video); // Assuming default shape [1,300,300,3]
-        // For TF Hub models, you might need to specify output node names if there are multiple.
-        // If model.outputs is available, one could use: const outputNodes = model.outputs.map(o => o.name);
-        // const outputTensors = await activeModel.instance.executeAsync(inputTensor, outputNodes);
-        const outputTensors = await activeModel.instance.executeAsync(inputTensor);
-        tf.dispose(inputTensor); // Dispose input tensor
+    try {
+        if (video.readyState >= 3) { // Ensure video has data
+            if (activeModel.instance.modelType === "yoloV5s") {
+                const modelInputShape = activeModel.instance.inputShape.slice(1, 3); // e.g., [640, 640]
+                const { tensor: inputTensor, letterboxInfo } = preprocessInputYoloV5s(video, modelInputShape);
+                
+                const rawOutputTensor = await activeModel.instance.executeAsync(inputTensor);
+                tf.dispose(inputTensor); // Dispose input tensor
 
-        predictions = await postprocessOutputMobileNetSsd(outputTensors, video.videoWidth, video.videoHeight);
-        // outputTensors are disposed inside postprocessOutputMobileNetSsd
-    } else if (activeModel.instance) { // For COCO-SSD like models
-        predictions = await activeModel.instance.detect(video);
+                // rawOutputTensor might be an array of tensors if model has multiple output nodes.
+                // Or a single tensor if it's structured that way.
+                // Assuming it's the single tensor [1, 25200, classes+5] for now.
+                // If it's an array, use rawOutputTensor[0] or similar based on model structure.
+                const outputTensorForPost = Array.isArray(rawOutputTensor) ? rawOutputTensor[0] : rawOutputTensor;
+
+                predictions = await postprocessOutputYoloV5s(
+                    outputTensorForPost, // Pass the actual tensor
+                    video.videoWidth,
+                    video.videoHeight,
+                    letterboxInfo,
+                    currentConfidenceThreshold
+                    // iouThreshold will use its default in postprocessOutputYoloV5s
+                );
+                // If rawOutputTensor was an array and contained other tensors that need disposal:
+                if (Array.isArray(rawOutputTensor)) {
+                    for (let i = 1; i < rawOutputTensor.length; i++) {
+                        tf.dispose(rawOutputTensor[i]);
+                    }
+                }
+
+            } else if (activeModel.instance.isGraphModel) { // For other GraphModels like MobileNet SSD
+                const inputTensor = preprocessInput(video, activeModel.instance.inputShape); // Assuming generic preprocess for other graph models
+                const outputTensors = await activeModel.instance.executeAsync(inputTensor);
+                tf.dispose(inputTensor);
+                predictions = await postprocessOutputMobileNetSsd(outputTensors, video.videoWidth, video.videoHeight, currentConfidenceThreshold);
+            } else if (activeModel.instance) { // For COCO-SSD like models
+                predictions = await activeModel.instance.detect(video);
+            }
+        }
+    } catch (err) {
+        console.error("Error during object detection (detectObjects): ", err);
+        // Potentially stop isDetecting or show error to user
+        isDetecting = false; // Stop detection loop on error to prevent flooding
+        setLoadingState(false, `检测出错: ${err.message.substring(0,100)}`);
     }
-    // Removed else { predictions = []; } as it's initialized above
 
-    drawResults(predictions);
+    drawResults(predictions || []); // Ensure predictions is not null/undefined
 
-    // if (activeModel.instance.isGraphModel) {
-    //     // console.warn("GraphModel detection logic not yet implemented for video.");
-    //     // For now, skip detection or show a message.
-    //     // To prevent errors, let's just clear results and return if it's a graph model.
-    //     // This will be addressed when integrating MobileNet SSD properly.
-    //     // drawResults([]); // Clear previous bounding boxes
-    //     // return; // Skip detection for graph model on video for now
-    // } else if (video.readyState >= 3) { // HAVE_FUTURE_DATA or HAVE_ENOUGH_DATA
-    //     try {
-    //         const predictions = await activeModel.instance.detect(video);
-    //         drawResults(predictions); // Call new function to draw results
-    //     } catch (err) {
-    //         console.error("Error during object detection: ", err);
-    //     }
-    // }
-    requestAnimationFrame(detectObjects); // Continue the loop
+    if (isDetecting) { // Only continue loop if still detecting
+        requestAnimationFrame(detectObjects);
+    }
 }
 
 function drawResults(predictions) {
@@ -516,24 +557,122 @@ imageUpload.addEventListener('change', handleImageUpload);
 async function performImageDetection(imgElement) {
     if (!activeModel.instance || !imgElement) {
         console.error("Model or image element not available for detection.");
-        return null; // Return null or empty array on error
+        return null;
     }
-    if (activeModel.instance.isGraphModel) {
-        // console.warn("GraphModel detection logic not yet implemented for image.");
-        // This will be properly implemented in the next step.
-        // For now, let's return empty predictions to avoid breaking flow.
-        return []; // Placeholder
-    }
+
     console.log("Performing detection on image:", imgElement.id || imgElement.src.substring(0,30));
+    let predictions = []; // Initialize predictions
+
     try {
-        const predictions = await activeModel.instance.detect(imgElement);
+        if (activeModel.instance.modelType === "yoloV5s") {
+            const modelInputShape = activeModel.instance.inputShape.slice(1, 3); // e.g., [640, 640]
+            const { tensor: inputTensor, letterboxInfo } = preprocessInputYoloV5s(imgElement, modelInputShape);
+            
+            const rawOutputTensor = await activeModel.instance.executeAsync(inputTensor);
+            tf.dispose(inputTensor);
+
+            const outputTensorForPost = Array.isArray(rawOutputTensor) ? rawOutputTensor[0] : rawOutputTensor;
+            
+            predictions = await postprocessOutputYoloV5s(
+                outputTensorForPost,
+                imgElement.naturalWidth,
+                imgElement.naturalHeight,
+                letterboxInfo,
+                currentConfidenceThreshold
+            );
+            if (Array.isArray(rawOutputTensor)) {
+                for (let i = 1; i < rawOutputTensor.length; i++) {
+                    tf.dispose(rawOutputTensor[i]);
+                }
+            }
+
+        } else if (activeModel.instance.isGraphModel) { // For MobileNet SSD
+            const inputTensor = preprocessInput(imgElement, activeModel.instance.inputShape);
+            const outputTensors = await activeModel.instance.executeAsync(inputTensor);
+            tf.dispose(inputTensor);
+            predictions = await postprocessOutputMobileNetSsd(outputTensors, imgElement.naturalWidth, imgElement.naturalHeight, currentConfidenceThreshold);
+        
+        } else if (activeModel.instance) { // For COCO-SSD
+            predictions = await activeModel.instance.detect(imgElement);
+        }
         console.log("Image detection complete. Predictions:", predictions);
         return predictions;
     } catch (err) {
         console.error("Error during image object detection: ", err);
         alert("图片物体检测时发生错误。");
-        return null; // Return null or empty array on error
+        return null; // Return null on error
     }
+}
+
+function preprocessInputYoloV5s(mediaElement, modelInputShape = [640, 640]) {
+    // modelInputShape is expected as [height, width] for model's square input
+    const modelHeight = modelInputShape[0];
+    const modelWidth = modelInputShape[1];
+
+    return tf.tidy(() => {
+        const imgTensor = tf.browser.fromPixels(mediaElement);
+        const originalHeight = imgTensor.shape[0];
+        const originalWidth = imgTensor.shape[1];
+
+        // Calculate aspect ratios
+        const r = Math.min(modelHeight / originalHeight, modelWidth / originalWidth);
+        const newUnpadWidth = Math.round(originalWidth * r);
+        const newUnpadHeight = Math.round(originalHeight * r);
+
+        // Resize the image with aspect ratio maintained
+        const resizedImg = tf.image.resizeBilinear(imgTensor, [newUnpadHeight, newUnpadWidth], true);
+
+        // Calculate padding
+        const dw = (modelWidth - newUnpadWidth) / 2;
+        const dh = (modelHeight - newUnpadHeight) / 2;
+
+        // Pad the image
+        // tf.pad takes paddings in the format [[top, bottom], [left, right], [channel_pad_before, channel_pad_after]]
+        // For RGB images, channels are not padded.
+        const paddingTop = Math.floor(dh);
+        const paddingBottom = Math.ceil(dh);
+        const paddingLeft = Math.floor(dw);
+        const paddingRight = Math.ceil(dw);
+
+        // Padding color (e.g., gray 114, 114, 114)
+        // To pad with a specific color, we might need to create a larger tensor of that color
+        // and then copy the resized image into it.
+        // Alternatively, tf.pad uses 0 for padding by default if 'constantValue' is not set or is 0.
+        // For YOLO, a common padding color is gray (114).
+        // If tf.pad's constantValue parameter supports per-channel or if the model is robust to 0-padding, it's simpler.
+        // Let's assume 0-padding for now if model is robust, or use a more complex method if 114 is strictly needed.
+        // The zldrobit/yolov5 TFJS model seems to be trained with 0-padding or implies it in its preprocessing.
+        // For a quick implementation, let's try padding with zeros first.
+        // If specific color padding (114) is essential, this part needs to be more complex:
+        // 1. Create a tensor of shape [modelHeight, modelWidth, 3] filled with 114.
+        // 2. Copy `resizedImg` onto this tensor at the correct offset.
+        // For now, using tf.pad with default (0) or specified constant value.
+        // The `constantValues` parameter for tf.pad in TFJS defaults to 0.
+        const paddedImg = tf.pad(
+            resizedImg,
+            [[paddingTop, paddingBottom], [paddingLeft, paddingRight], [0, 0]],
+            0 // Constant value for padding, 0 is often acceptable. Use 114 if required by specific model.
+        );
+
+        // Normalize to [0, 1] and add batch dimension
+        // The input tensor should be float32 for most models.
+        const normalizedImg = paddedImg.toFloat().div(255.0);
+        const batchedImg = normalizedImg.expandDims(0); // Shape: [1, modelHeight, modelWidth, 3]
+
+        // Store letterboxing info for postprocessing
+        // This info helps convert detected boxes back to original image coordinates.
+        const letterboxInfo = {
+            originalWidth,
+            originalHeight,
+            paddedWidth: modelWidth, // width of the letterboxed image (model input width)
+            paddedHeight: modelHeight, // height of the letterboxed image (model input height)
+            ratio: r, // resize ratio
+            dw: dw, // width padding
+            dh: dh  // height padding
+        };
+
+        return { tensor: batchedImg, letterboxInfo: letterboxInfo };
+    });
 }
 
 function displayImageSummaries() {
@@ -587,6 +726,147 @@ function displayImageSummaries() {
 
         summaryListElement.appendChild(listItem);
     });
+}
+
+async function postprocessOutputYoloV5s(
+    rawOutputTensor,      // Single tensor, e.g., shape [1, 25200, 85] for COCO (80 classes + 5 coords/obj_score)
+    originalImageWidth,
+    originalImageHeight,
+    letterboxInfo,        // Contains { ratio, dw, dh, paddedWidth, paddedHeight }
+    confidenceThreshold,  // User-defined confidence threshold
+    iouThreshold = 0.45   // Default IoU threshold for NMS
+) {
+    if (!rawOutputTensor) {
+        console.warn("YOLOv5 postprocess: rawOutputTensor is null or undefined.");
+        return [];
+    }
+
+    console.log("YOLOv5 Postprocessing: Input tensor shape:", rawOutputTensor.shape);
+    // Expected shape e.g. [1, 25200, 85] (1 batch, 25200 boxes, 5 (xywh, obj_score) + num_classes)
+
+    const outputData = await rawOutputTensor.array(); // Get data as a JavaScript array
+    tf.dispose(rawOutputTensor); // Dispose the raw tensor as soon as data is extracted
+
+    const boxes = [];        // To store [x, y, w, h]
+    const scores = [];       // To store confidence scores (objectness * class_score)
+    const classIndices = []; // To store class indices
+
+    const numClasses = rawOutputTensor.shape[2] - 5; // Assuming 5 + num_classes structure
+
+    // Step 1: Decode and filter boxes based on confidence
+    // This loop iterates through all potential bounding boxes predicted by the model.
+    // For each box, it calculates the actual confidence score and extracts box coordinates and class.
+    outputData[0].forEach(prediction => { // outputData[0] because batch size is 1
+        const objectness = prediction[4]; // Objectness score
+        if (objectness < confidenceThreshold) { // Early filter by objectness (can be part of overall confidence)
+            return; // Skip low objectness boxes
+        }
+
+        // Find the class with the highest score for this box
+        let maxClassScore = 0;
+        let bestClassIndex = -1;
+        for (let i = 0; i < numClasses; i++) {
+            const classScore = prediction[5 + i];
+            if (classScore > maxClassScore) {
+                maxClassScore = classScore;
+                bestClassIndex = i;
+            }
+        }
+
+        const finalScore = objectness * maxClassScore; // Combine objectness with class score
+
+        if (finalScore > confidenceThreshold) {
+            // Extract box coordinates (center_x, center_y, width, height) - normalized to model input size (e.g., 640x640)
+            const cx = prediction[0]; // center_x
+            const cy = prediction[1]; // center_y
+            const w = prediction[2];  // width
+            const h = prediction[3];  // height
+
+            // Convert to top-left x, y for NMS functions (still normalized to model input size)
+            const x1 = cx - w / 2;
+            const y1 = cy - h / 2;
+            // NMS functions in TFJS often expect [y1, x1, y2, x2]
+            // So, boxes for NMS should be [y1, x1, y1 + h, x1 + w] (normalized to model input size)
+            // However, our `drawResults` expects [x, y, width, height] in original image coords.
+            // We'll store [x1, y1, w, h] (top-left based, normalized to model input) for now,
+            // and convert to original image space *after* NMS.
+
+            boxes.push([x1, y1, x1 + w, y1 + h]); // Store as [x1, y1, x2, y2] for NMS
+            scores.push(finalScore);
+            classIndices.push(bestClassIndex);
+        }
+    });
+
+    if (boxes.length === 0) {
+        console.log("YOLOv5 Postprocessing: No boxes passed confidence threshold.");
+        return [];
+    }
+    console.log(`YOLOv5 Postprocessing: ${boxes.length} boxes before NMS.`);
+
+
+    // Step 2: Perform Non-Max Suppression (NMS) per class
+    // TFJS NMS `tf.image.nonMaxSuppressionAsync` typically works on boxes for a single class at a time.
+    // Or, `nonMaxSuppressionWithScoreAsync` can handle multi-class if boxes are structured correctly,
+    // but it's often simpler to loop per class or use a combined NMS if available.
+    // For now, let's implement a simplified NMS approach (can be refined).
+    // A common approach:
+    // 1. Get all boxes exceeding confidence.
+    // 2. Apply NMS for each class independently.
+    
+    const nmsResultIndices = await tf.image.nonMaxSuppressionAsync(
+        boxes,           // tensor2d of shape [numBoxes, 4] -> [[y1,x1,y2,x2],...] TFJS wants this order
+        scores,          // tensor1d of shape [numBoxes]
+        100,             // maxOutputSize: Max number of boxes to select.
+        iouThreshold,    // iouThreshold
+        confidenceThreshold // scoreThreshold (optional, can filter again here)
+    );
+
+    const finalDetectionsIndices = await nmsResultIndices.array();
+    tf.dispose(nmsResultIndices);
+
+    console.log(`YOLOv5 Postprocessing: ${finalDetectionsIndices.length} boxes after NMS.`);
+
+    // Step 3: Map NMS results back to original image coordinates and format for drawResults
+    const finalPredictions = [];
+    finalDetectionsIndices.forEach(index => {
+        const boxNMS = boxes[index]; // This is [x1_model, y1_model, x2_model, y2_model] normalized to model input
+        const score = scores[index];
+        const classIndex = classIndices[index];
+        const className = COCO_CLASSES[classIndex]; // Assuming COCO_CLASSES is available globally
+
+        // Denormalize and adjust for letterboxing
+        // boxNMS = [x1_model_norm, y1_model_norm, x2_model_norm, y2_model_norm]
+        let [x1_model_norm, y1_model_norm, x2_model_norm, y2_model_norm] = boxNMS;
+
+        // Scale back to padded image dimensions (e.g., 640x640)
+        // This step is implicitly handled if cx,cy,w,h were already relative to padded size.
+        // The zldrobit model outputs coordinates relative to the 640x640 input.
+
+        // Adjust for letterbox padding and ratio to get coordinates in original image space
+        // (x_model - dw) / ratio = x_original
+        // (y_model - dh) / ratio = y_original
+        // w_original = w_model / ratio
+        // h_original = h_model / ratio
+        
+        const x1_orig = (x1_model_norm * letterboxInfo.paddedWidth - letterboxInfo.dw) / letterboxInfo.ratio;
+        const y1_orig = (y1_model_norm * letterboxInfo.paddedHeight - letterboxInfo.dh) / letterboxInfo.ratio;
+        const x2_orig = (x2_model_norm * letterboxInfo.paddedWidth - letterboxInfo.dw) / letterboxInfo.ratio;
+        const y2_orig = (y2_model_norm * letterboxInfo.paddedHeight - letterboxInfo.dh) / letterboxInfo.ratio;
+
+        finalPredictions.push({
+            class: className,
+            score: score,
+            bbox: [
+                x1_orig,
+                y1_orig,
+                x2_orig - x1_orig, // width
+                y2_orig - y1_orig  // height
+            ]
+        });
+    });
+
+    console.log("YOLOv5 Postprocessing: Final formatted predictions:", finalPredictions.length);
+    return finalPredictions;
 }
 
 function handleSummaryItemClick(imageId) {
