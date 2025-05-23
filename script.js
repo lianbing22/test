@@ -1,5 +1,4 @@
-// This script.js content is from the end of Subtask 21,
-// with Subtask 22 changes (duplicate variable cleanup) manually integrated.
+// Final Integrated Script - End of Stage 7, Module 1
 
 const video = document.getElementById('video');
 const startButton = document.getElementById('startButton');
@@ -9,6 +8,7 @@ const canvas = document.getElementById('canvas');
 const context = canvas.getContext('2d');
 const videoUpload = document.getElementById('videoUpload');
 const imageUpload = document.getElementById('imageUpload'); 
+const displayedImageElement = document.getElementById('displayedImage');
 
 const COCO_CLASSES = [
     'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
@@ -38,16 +38,16 @@ let iouSlider;
 let iouValueDisplay;
 
 // Thresholds
-let currentConfidenceThreshold = 0.5; // Default to 50%
-let currentIouThreshold = 0.45; // Default IoU threshold
+let currentConfidenceThreshold = 0.5; 
+let currentIouThreshold = 0.45; 
 
-let currentMainMediaPredictions = []; // For re-drawing static images with new threshold
+let currentMainMediaPredictions = []; 
 
 function showToast(message, type = 'info', duration = 5000) {
     const container = document.getElementById('toast-container');
     if (!container) {
-        console.error('Toast container not found!');
-        alert(`${type.toUpperCase()}: ${message}`);
+        console.error('Toast container not found! Cannot show toast:', message);
+        alert(`${type.toUpperCase()}: ${message}`); // Fallback
         return;
     }
 
@@ -57,27 +57,27 @@ function showToast(message, type = 'info', duration = 5000) {
     let bgColor, textColor, iconSVG;
     switch (type) {
         case 'success':
-            bgColor = 'bg-green-500';
+            bgColor = 'bg-green-500 dark:bg-green-600';
             textColor = 'text-white';
             iconSVG = `<svg class="w-5 h-5 mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>`;
             break;
         case 'error':
-            bgColor = 'bg-red-500';
+            bgColor = 'bg-red-500 dark:bg-red-600';
             textColor = 'text-white';
             iconSVG = `<svg class="w-5 h-5 mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>`;
             break;
         case 'warning':
-            bgColor = 'bg-yellow-400'; 
-            textColor = 'text-gray-800'; 
+            bgColor = 'bg-yellow-400 dark:bg-yellow-500'; 
+            textColor = 'text-gray-800 dark:text-gray-900'; 
             iconSVG = `<svg class="w-5 h-5 mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.216 3.031-1.742 3.031H4.42c-1.526 0-2.492-1.697-1.742-3.031l5.58-9.92zM10 13a1 1 0 110-2 1 1 0 010 2zm-1-3a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd"></path></svg>`;
             break;
         default: // info
-            bgColor = 'bg-blue-500';
+            bgColor = 'bg-blue-500 dark:bg-blue-600';
             textColor = 'text-white';
             iconSVG = `<svg class="w-5 h-5 mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>`;
             break;
     }
-    toast.classList.add(bgColor, textColor);
+    toast.classList.add(...bgColor.split(' '), ...textColor.split(' '));
 
     const messageSpan = document.createElement('span');
     messageSpan.innerHTML = iconSVG; 
@@ -87,8 +87,9 @@ function showToast(message, type = 'info', duration = 5000) {
 
     const closeButton = document.createElement('button');
     closeButton.innerHTML = '&times;';
-    closeButton.className = 'ml-4 text-xl font-semibold leading-none hover:opacity-75';
+    closeButton.className = 'ml-4 text-xl font-semibold leading-none hover:opacity-75 focus:outline-none';
     closeButton.onclick = () => {
+        toast.classList.remove('animate-fade-in-right');
         toast.classList.add('animate-fade-out-right'); 
         setTimeout(() => toast.remove(), 300); 
     };
@@ -99,6 +100,7 @@ function showToast(message, type = 'info', duration = 5000) {
 
     setTimeout(() => {
         if (toast.parentElement) {
+            toast.classList.remove('animate-fade-in-right');
             toast.classList.add('animate-fade-out-right'); 
             setTimeout(() => toast.remove(), 300); 
         }
@@ -110,17 +112,21 @@ function updateModelSelectorUI(selectedModelName) {
     buttons.forEach(button => {
         const modelName = button.dataset.modelName;
         const checkmark = document.getElementById(`checkmark-${modelName}`); 
+        const loadingIndicator = button.querySelector('.model-loading-indicator');
 
         if (modelName === selectedModelName) {
-            button.classList.add('bg-blue-100', 'ring-2', 'ring-blue-500');
-            button.classList.remove('bg-white');
+            button.classList.add('bg-blue-100', 'dark:bg-blue-700', 'ring-2', 'ring-blue-500', 'dark:ring-blue-400');
+            button.classList.remove('bg-white', 'dark:bg-gray-800');
             button.setAttribute('aria-pressed', 'true');
             if (checkmark) checkmark.classList.remove('hidden');
+            if (loadingIndicator && !activeModel.isLoading) loadingIndicator.classList.add('hidden'); // Hide spinner if selected and not loading
+
         } else {
-            button.classList.remove('bg-blue-100', 'ring-2', 'ring-blue-500');
-            button.classList.add('bg-white');
+            button.classList.remove('bg-blue-100', 'dark:bg-blue-700', 'ring-2', 'ring-blue-500', 'dark:ring-blue-400');
+            button.classList.add('bg-white', 'dark:bg-gray-800');
             button.setAttribute('aria-pressed', 'false');
             if (checkmark) checkmark.classList.add('hidden');
+            if (loadingIndicator) loadingIndicator.classList.add('hidden'); // Always hide spinner if not selected
         }
     });
 }
@@ -136,25 +142,30 @@ function setLoadingState(isLoading, message = "") {
 
     modelButtons.forEach(button => {
         button.disabled = isLoading;
+        const modelNameForButton = button.dataset.modelName;
         const loadingIndicator = button.querySelector('.model-loading-indicator');
         const percentageText = button.querySelector('.loading-percentage');
+        const mainTextElements = button.querySelectorAll('.model-name-text, .model-desc-text, .checkmark-icon');
 
-        if (isLoading) {
+        if (isLoading && activeModel.name === modelNameForButton) { // Show spinner only on the button being loaded
             button.classList.add('opacity-75', 'cursor-not-allowed'); 
-            if (loadingIndicator) {
-                loadingIndicator.classList.remove('hidden');
-                if (percentageText) percentageText.textContent = ''; 
-            }
-        } else {
-            button.classList.remove('opacity-75', 'cursor-not-allowed');
-            if (loadingIndicator) {
-                loadingIndicator.classList.add('hidden');
-            }
+            if (loadingIndicator) loadingIndicator.classList.remove('hidden');
+            if (percentageText) percentageText.textContent = ''; // Reset percentage initially
+            mainTextElements.forEach(el => el.classList.add('opacity-0')); // Hide text and checkmark
+        } else if (isLoading) { // Other buttons are disabled but don't show their spinner
+             button.classList.add('opacity-50', 'cursor-not-allowed');
+             if (loadingIndicator) loadingIndicator.classList.add('hidden');
+             mainTextElements.forEach(el => el.classList.remove('opacity-0')); // Ensure text is visible
+        } else { // Not loading
+            button.classList.remove('opacity-75', 'opacity-50', 'cursor-not-allowed');
+            if (loadingIndicator) loadingIndicator.classList.add('hidden');
+            mainTextElements.forEach(el => el.classList.remove('opacity-0'));
         }
     });
-
+    
     console.log(`setLoadingState: isLoading=${isLoading}, activeModel.instance is ${activeModel.instance ? 'NOT null' : 'null'}`);
     startButton.disabled = isLoading || (activeModel.instance === null);
+    if(startButton.disabled) startButton.classList.add('opacity-50', 'cursor-not-allowed'); else startButton.classList.remove('opacity-50', 'cursor-not-allowed');
     console.log(`setLoadingState: startButton.disabled set to ${startButton.disabled}`);
     
     videoUpload.disabled = isLoading;
@@ -170,16 +181,19 @@ async function loadSelectedModel(modelName) {
     }
      if (activeModel.name === modelName && activeModel.instance && !activeModel.isLoading) {
         console.log(`${modelName} is already loaded and active.`);
+        showToast(`${modelName} 模型已加载。`, 'info', 3000);
         return;
     }
 
+    const prevModelName = activeModel.name;
     activeModel.name = modelName; 
     activeModel.isLoading = true; 
     activeModel.error = null;
     activeModel.instance = null; 
     
-    setLoadingState(true, `正在加载 ${modelName} 模型...`);
-    updateModelSelectorUI(modelName); 
+    if (prevModelName) updateModelSelectorUI(prevModelName); // Deselect old one visually
+    updateModelSelectorUI(modelName); // Select new one and prepare for loading UI
+    setLoadingState(true, `正在加载 ${modelName} 模型...`); // This will show spinner on the correct button
 
     try {
         let newModelInstance;
@@ -231,9 +245,9 @@ async function loadSelectedModel(modelName) {
         console.log(`loadSelectedModel: ${modelName} instance assigned. isLoading set to false.`);
         
         setLoadingState(false, `${modelName} 加载完成!`); 
-        if (document.getElementById(`model-${modelName}`).getAttribute('aria-pressed') === 'false') {
-            updateModelSelectorUI(modelName);
-        }
+        updateModelSelectorUI(modelName); // Ensure correct button is highlighted after loading
+        showToast(`${modelName} 模型加载成功!`, 'success');
+
 
     } catch (err) {
         console.error(`Error loading ${modelName} model (raw error object):`, err); 
@@ -260,7 +274,7 @@ async function loadSelectedModel(modelName) {
 }
 
 function clearAllMediaAndResults() {
-    console.log("Clearing all media and results due to model switch...");
+    console.log("Clearing all media and results due to model switch or media change...");
 
     if (video.srcObject) {
         const stream = video.srcObject;
@@ -271,12 +285,12 @@ function clearAllMediaAndResults() {
         URL.revokeObjectURL(video.src);
         video.src = "";
     }
-    video.style.display = 'block'; 
+    video.style.display = 'none'; 
     video.controls = false;
 
-    const existingImage = document.getElementById('displayedImage');
-    if (existingImage) {
-        existingImage.remove();
+    if (displayedImageElement.src) {
+        displayedImageElement.src = "";
+        displayedImageElement.classList.add('hidden');
     }
     
     const mediaContainer = document.getElementById('container');
@@ -288,20 +302,24 @@ function clearAllMediaAndResults() {
     context.clearRect(0, 0, canvas.width, canvas.height);
     canvas.style.display = 'none'; 
 
-    objectList.innerHTML = '<li class="text-gray-500">请选择媒体并开始分析。</li>';
+    objectList.innerHTML = '<li class="text-gray-500 dark:text-gray-400">请选择媒体并开始分析。</li>';
 
     batchImageResults = []; 
     const summaryListElement = document.getElementById('imageSummaryList');
     if (summaryListElement) {
-        summaryListElement.innerHTML = '<li class="text-gray-500">上传图片以查看摘要。</li>';
+        summaryListElement.innerHTML = '<li class="text-gray-500 dark:text-gray-400">上传图片以查看摘要。</li>';
     }
 
     const loadingStatusEl = document.getElementById('model-loading-status');
     if (loadingStatusEl) {
-        if (!activeModel.isLoading && !activeModel.error) {
-             loadingStatusEl.textContent = '选择模型并加载媒体进行分析。';
+        if (!activeModel.isLoading && !activeModel.error && activeModel.name && activeModel.instance) {
+             loadingStatusEl.textContent = activeModel.name + ' 已准备好。请选择媒体。';
+        } else if (activeModel.isLoading) {
+            // Keep current loading message
         } else if (activeModel.error) {
             loadingStatusEl.textContent = `${activeModel.name || '模型'} 加载失败。请重试。`;
+        } else {
+             loadingStatusEl.textContent = '选择模型并加载媒体进行分析。';
         }
     }
     currentMainMediaPredictions = []; 
@@ -354,6 +372,7 @@ async function detectObjects() {
         console.error("Error during object detection (detectObjects): ", err);
         isDetecting = false; 
         setLoadingState(false, `检测出错: ${err.message.substring(0,100)}`);
+        showToast(`视频检测时发生错误: ${err.message.substring(0,100)}`, 'error');
     }
 
     drawResults(predictions || []); 
@@ -381,6 +400,7 @@ function drawResults(predictions) {
             context.fillText(label, x, y > 10 ? y - 5 : 10);
 
             const listItem = document.createElement('li');
+            listItem.className = "text-gray-800 dark:text-gray-200";
             listItem.textContent = label;
             objectList.appendChild(listItem);
         }
@@ -388,23 +408,12 @@ function drawResults(predictions) {
 }
 
 startButton.addEventListener('click', async () => {
-    if (video.src && video.src.startsWith('blob:')) {
-        URL.revokeObjectURL(video.src); 
-        video.src = ""; 
-        console.log("Cleared previously loaded video file.");
-    }
-    batchImageResults = [];
-    const imageSummaryListElement = document.getElementById('imageSummaryList'); 
-    if (imageSummaryListElement) imageSummaryListElement.innerHTML = '';
-    document.getElementById('objectList').innerHTML = ''; 
-
-    const existingImage = document.getElementById('displayedImage');
-    if (existingImage) {
-        existingImage.remove();
-    }
+    clearAllMediaAndResults(); // Clear everything before starting new media
+    
     document.getElementById('main-content-placeholder').classList.add('hidden');
     document.getElementById('container').style.display = 'block'; 
     video.style.display = 'block';
+    displayedImageElement.classList.add('hidden');
     canvas.style.display = 'block';
     video.controls = false; 
 
@@ -423,24 +432,36 @@ startButton.addEventListener('click', async () => {
             } else {
                 showToast("访问摄像头时发生错误：" + err.message, 'error');
             }
+            clearAllMediaAndResults(); // Re-show placeholder on error
         }
     } else {
         showToast("您的浏览器不支持 getUserMedia。", 'error');
+        clearAllMediaAndResults(); // Re-show placeholder
     }
 });
 
 stopButton.addEventListener('click', () => {
-    const stream = video.srcObject;
-    if (stream) {
-        const tracks = stream.getTracks();
-        tracks.forEach(track => track.stop());
+    if (video.srcObject) {
+        const stream = video.srcObject;
+        stream.getTracks().forEach(track => track.stop());
         video.srcObject = null;
     }
     isDetecting = false;
-    context.clearRect(0, 0, canvas.width, canvas.height); 
-    objectList.innerHTML = ''; 
-    const imageSummaryListElement = document.getElementById('imageSummaryList'); 
-    if (imageSummaryListElement) imageSummaryListElement.innerHTML = ''; 
+    if (video.src && video.src.startsWith('blob:')) { // If it was a video file
+        URL.revokeObjectURL(video.src);
+        video.src = "";
+    }
+    // Don't call clearAllMediaAndResults here to keep model selection,
+    // but do clear the media display part
+    video.style.display = 'none';
+    displayedImageElement.classList.add('hidden');
+    displayedImageElement.src = '';
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.style.display = 'none';
+    objectList.innerHTML = '<li class="text-gray-500 dark:text-gray-400">媒体已停止。</li>';
+    document.getElementById('main-content-placeholder').classList.remove('hidden');
+    document.getElementById('container').style.display = 'none';
+    currentMainMediaPredictions = [];
 });
 
 video.addEventListener('play', () => {
@@ -450,42 +471,23 @@ video.addEventListener('play', () => {
         canvas.height = video.videoHeight;
         isDetecting = true;
         detectObjects();
+    } else if (video.src && video.src.startsWith('blob:')) {
+        console.log("Uploaded video playing. Detection started by onloadeddata.");
     } else {
-        console.log("Video 'play' event fired, but it's not a camera stream. Detection handled elsewhere or already started.");
+        console.log("Video 'play' event fired, but no identifiable stream or blob src.");
     }
 });
 
 function handleVideoUpload(event) {
     const file = event.target.files[0];
     if (file) {
-        if (video.srcObject) {
-            const stream = video.srcObject;
-            const tracks = stream.getTracks();
-            tracks.forEach(track => track.stop());
-            video.srcObject = null;
-        }
-        if (video.src && video.src.startsWith('blob:')) {
-            URL.revokeObjectURL(video.src);
-            console.log("Revoked old object URL from previous file upload.");
-            video.src = ""; 
-        }
-        batchImageResults = [];
-        const imageSummaryList = document.getElementById('imageSummaryList');
-        if (imageSummaryList) imageSummaryList.innerHTML = '';
-        document.getElementById('objectList').innerHTML = ''; 
+        clearAllMediaAndResults(); // Clear everything before starting new media
 
-        const existingImage = document.getElementById('displayedImage');
-        if (existingImage) {
-            existingImage.remove();
-        }
-    document.getElementById('main-content-placeholder').classList.add('hidden');
-    document.getElementById('container').style.display = 'block';
-    video.style.display = 'block';
-    canvas.style.display = 'block';
-
-        isDetecting = false;
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        objectList.innerHTML = '';
+        document.getElementById('main-content-placeholder').classList.add('hidden');
+        document.getElementById('container').style.display = 'block';
+        video.style.display = 'block';
+        displayedImageElement.classList.add('hidden');
+        canvas.style.display = 'block';
 
         const fileURL = URL.createObjectURL(file);
         video.src = fileURL; 
@@ -507,6 +509,8 @@ function handleVideoUpload(event) {
                 URL.revokeObjectURL(video.src);
                 console.log("Revoked object URL on video end.");
             }
+            // Consider calling clearAllMediaAndResults or a subset to reset UI
+            stopButton.click(); // Simulate stop button press to reset UI
         };
     }
 }
@@ -518,37 +522,12 @@ async function handleImageUpload(event) {
     if (!files.length) {
         return;
     }
+    clearAllMediaAndResults(); // Clear previous state
 
-    if (video.srcObject) { 
-        const stream = video.srcObject;
-        const tracks = stream.getTracks();
-        tracks.forEach(track => track.stop());
-        video.srcObject = null;
-    }
-    if (video.src && video.src.startsWith('blob:')) { 
-        URL.revokeObjectURL(video.src);
-        video.src = "";
-    }
-    video.style.display = 'none';
-    video.controls = false;
-    const existingMainImage = document.getElementById('displayedImage');
-    if (existingMainImage) {
-        existingMainImage.remove();
-    }
-    isDetecting = false; 
-    context.clearRect(0, 0, canvas.width, canvas.height);
-
-    batchImageResults = [];
-    const imageSummaryList = document.getElementById('imageSummaryList'); 
-    if (imageSummaryList) {
-        imageSummaryList.innerHTML = ''; 
-    } else {
-        objectList.innerHTML = '';
-    }
-    document.getElementById('objectList').innerHTML = '';
-
+    batchImageResults = []; // Reset batch results
 
     console.log(`Processing ${files.length} image(s)...`);
+    showToast(`正在处理 ${files.length} 张图片...`, 'info', 3000);
 
     for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -563,9 +542,16 @@ async function handleImageUpload(event) {
                 reader.readAsDataURL(file);
             });
 
+            // Don't display image in main view yet, just process
             const tempImg = document.createElement('img');
             tempImg.src = dataURL;
-            await new Promise(resolve => tempImg.onload = resolve); 
+            await new Promise((resolve, reject) => {
+                tempImg.onload = resolve;
+                tempImg.onerror = (e) => {
+                    console.error(`Error loading temp image ${fileName}:`, e);
+                    reject(new Error(`Failed to load temp image ${fileName}`));
+                };
+            });
 
             const predictions = await performImageDetection(tempImg);
 
@@ -580,6 +566,7 @@ async function handleImageUpload(event) {
 
         } catch (error) {
             console.error(`Error processing file ${fileName}:`, error);
+            showToast(`处理文件 ${fileName} 出错: ${error.message}`, 'error');
         }
     }
 
@@ -587,18 +574,15 @@ async function handleImageUpload(event) {
     displayImageSummaries(); 
 
     if (batchImageResults.length > 0) {
-        document.getElementById('main-content-placeholder').classList.remove('hidden');
-        document.getElementById('container').style.display = 'none'; 
-        canvas.style.display = 'none';
-        const existingMainImage = document.getElementById('displayedImage');
-        if (existingMainImage) existingMainImage.remove(); 
-        context.clearRect(0,0, canvas.width, canvas.height);
-        document.getElementById('objectList').innerHTML = '<li class="text-gray-500">从摘要列表选择图片查看详情。</li>';
+        // Select the first image by default, or let user click
+        handleSummaryItemClick(batchImageResults[0].id);
+        showToast(`${batchImageResults.length} 张图片处理完成。`, 'success');
     } else {
+        // No images successfully processed, show placeholder
         document.getElementById('main-content-placeholder').classList.remove('hidden');
         document.getElementById('container').style.display = 'none';
         canvas.style.display = 'none';
-        document.getElementById('objectList').innerHTML = ''; 
+        objectList.innerHTML = '<li class="text-gray-500 dark:text-gray-400">未处理任何图片或处理失败。</li>'; 
     }
 }
 
@@ -649,8 +633,8 @@ async function performImageDetection(imgElement) {
         console.log("Image detection complete. Predictions:", predictions);
         return predictions;
     } catch (err) {
-        console.error("Error during image object detection: ", err);
-        showToast("图片物体检测时发生错误。", 'error'); 
+        console.error(`Error during image object detection for ${activeModel.name}:`, err);
+        showToast(`图片检测 (${activeModel.name}) 失败: ${err.message.substring(0,100)}`, 'error'); 
         return null; 
     }
 }
@@ -681,7 +665,7 @@ function preprocessInputYoloV5s(mediaElement, modelInputShape = [640, 640]) {
         const paddedImg = tf.pad(
             resizedImg,
             [[paddingTop, paddingBottom], [paddingLeft, paddingRight], [0, 0]],
-            0 
+            114 // YOLOv5 common padding color (gray)
         );
 
         const normalizedImg = paddedImg.toFloat().div(255.0);
@@ -734,10 +718,10 @@ async function postprocessOutputMobileNetSsd(predictionOutputs, imageWidth, imag
         const score = scores[0][i];
         if (score > confidenceThreshold) {
             const classIndex = parseInt(classes[0][i]); 
-            const className = COCO_CLASSES[classIndex -1]; 
+            const className = COCO_CLASSES[classIndex]; // MobileNetSSD from TF Hub often uses 0-indexed classes directly mapping to COCO.
 
             if (!className) {
-                console.warn(`Unknown class index: ${classIndex}`);
+                console.warn(`Unknown class index for MobileNetSSD: ${classIndex}`);
                 continue;
             }
 
@@ -765,28 +749,28 @@ function displayImageSummaries() {
     summaryListElement.innerHTML = ''; 
 
     if (batchImageResults.length === 0) {
-        summaryListElement.innerHTML = '<li class="text-gray-500">没有处理的图片。</li>';
+        summaryListElement.innerHTML = '<li class="text-gray-500 dark:text-gray-400">没有处理的图片。</li>';
         return;
     }
 
     batchImageResults.forEach((result, index) => {
         const listItem = document.createElement('li');
-        listItem.className = 'p-2 border rounded-md hover:bg-gray-200 cursor-pointer flex items-center space-x-2';
+        listItem.className = 'p-2 border dark:border-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer flex items-center space-x-2';
         listItem.dataset.imageId = result.id; 
 
         const thumbnail = document.createElement('img');
         thumbnail.src = result.dataURL;
-        thumbnail.className = 'w-16 h-16 object-cover rounded'; 
+        thumbnail.className = 'w-12 h-12 sm:w-16 sm:h-16 object-cover rounded'; 
 
         const infoDiv = document.createElement('div');
-        infoDiv.className = 'flex-1';
+        infoDiv.className = 'flex-1 min-w-0'; // Added min-w-0 for better truncation
 
         const fileNameP = document.createElement('p');
-        fileNameP.className = 'text-sm font-medium truncate';
+        fileNameP.className = 'text-xs sm:text-sm font-medium truncate';
         fileNameP.textContent = result.fileName;
 
         const detectionSummaryP = document.createElement('p');
-        detectionSummaryP.className = 'text-xs text-gray-600';
+        detectionSummaryP.className = 'text-xs text-gray-600 dark:text-gray-400';
         if (result.predictions && result.predictions.length > 0) {
             const objectTypes = new Set(result.predictions.map(p => p.class));
             detectionSummaryP.textContent = `检测到 ${result.predictions.length} 个物体 (${Array.from(objectTypes).slice(0,2).join(', ')}${objectTypes.size > 2 ? '...' : ''})`;
@@ -925,8 +909,7 @@ function handleSummaryItemClick(imageId) {
 
     if (video.srcObject) { 
         const stream = video.srcObject;
-        const tracks = stream.getTracks();
-        tracks.forEach(track => track.stop());
+        stream.getTracks().forEach(track => track.stop());
         video.srcObject = null;
     }
     if (video.src && video.src.startsWith('blob:')) { 
@@ -937,10 +920,9 @@ function handleSummaryItemClick(imageId) {
     video.controls = false;
     isDetecting = false; 
 
-    const existingMainImage = document.getElementById('displayedImage');
-    if (existingMainImage) {
-        existingMainImage.remove();
-    }
+    displayedImageElement.src = selectedResult.dataURL;
+    displayedImageElement.classList.remove('hidden');
+    
     document.getElementById('video').style.display = 'none';
 
     document.getElementById('main-content-placeholder').classList.add('hidden');
@@ -948,15 +930,9 @@ function handleSummaryItemClick(imageId) {
     videoContainer.style.display = 'block'; 
 
 
-    const img = document.createElement('img');
-    img.id = 'displayedImage'; 
-    img.src = selectedResult.dataURL;
-    img.className = 'w-full h-full object-contain'; 
-    videoContainer.appendChild(img); 
-
-    img.onload = () => {
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
+    displayedImageElement.onload = () => {
+        canvas.width = displayedImageElement.naturalWidth;
+        canvas.height = displayedImageElement.naturalHeight;
         canvas.style.display = 'block'; 
 
         currentMainMediaPredictions = selectedResult.predictions || []; 
@@ -964,23 +940,23 @@ function handleSummaryItemClick(imageId) {
 
         console.log(`Displaying details for ${selectedResult.fileName}`);
     };
+     // If image is already loaded (e.g. from cache), onload might not fire, so check and call directly
+    if (displayedImageElement.complete && displayedImageElement.naturalWidth > 0) {
+        displayedImageElement.onload();
+    }
+
 
     const summaryListItems = document.querySelectorAll('#imageSummaryList li');
     summaryListItems.forEach(item => {
         if (item.dataset.imageId === imageId) {
-            item.classList.add('bg-blue-200', 'ring-2', 'ring-blue-500'); 
+            item.classList.add('bg-blue-200', 'dark:bg-blue-600', 'ring-2', 'ring-blue-500'); 
         } else {
-            item.classList.remove('bg-blue-200', 'ring-2', 'ring-blue-500');
+            item.classList.remove('bg-blue-200', 'dark:bg-blue-600', 'ring-2', 'ring-blue-500');
         }
     });
 }
 
-
-// Load the model when the script loads
-// loadModel(); // Replaced by DOMContentLoaded logic
-
 document.addEventListener('DOMContentLoaded', () => {
-    // Event listeners for model selector buttons
     const modelSelectorButtons = document.querySelectorAll('.model-selector-btn');
     modelSelectorButtons.forEach(button => {
         button.addEventListener('click', () => {
@@ -990,20 +966,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadSelectedModel(modelNameFromButton);
             } else if (activeModel.isLoading) {
                 console.log("Model loading is already in progress.");
+                showToast('模型仍在加载中，请稍候...', 'warning');
             } else {
                 console.log(`${modelNameFromButton} is already the active model.`);
+                showToast(`${modelNameFromButton} 模型已激活。`, 'info', 3000);
             }
         });
     });
 
-    // Initial model load (default: COCO-SSD)
-    (async () => { // IIFE to use async/await
+    clearAllMediaAndResults(); // Initial UI state with placeholder
+
+    (async () => { 
         try {
             console.log("DOMContentLoaded: Attempting to load default model...");
             await loadSelectedModel("cocoSsd");
             console.log("DOMContentLoaded: Default model loading process initiated.");
-            // setLoadingState and updateModelSelectorUI are called within loadSelectedModel
-            // Check final state after attempt:
             if (activeModel.instance && !activeModel.error) {
                  document.getElementById('model-loading-status').textContent = activeModel.name + ' 已准备好。请选择媒体。';
             } else if (activeModel.error) {
@@ -1017,7 +994,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     })(); 
 
-    // Initialize confidence slider
     confidenceSlider = document.getElementById('confidenceSlider');
     confidenceValueDisplay = document.getElementById('confidenceValue');
 
@@ -1029,16 +1005,12 @@ document.addEventListener('DOMContentLoaded', () => {
             currentConfidenceThreshold = parseInt(event.target.value) / 100;
             confidenceValueDisplay.textContent = `${event.target.value}%`;
 
-            const displayedImage = document.getElementById('displayedImage');
-            if (displayedImage && displayedImage.style.display !== 'none') {
+            if (displayedImageElement.src && !displayedImageElement.classList.contains('hidden')) {
                 drawResults(currentMainMediaPredictions); 
-            } else if (isDetecting && (video.srcObject || (video.src && !video.paused))) {
-                // console.log("Threshold changed for video, will apply on next frame.");
-            }
+            } 
         });
     }
 
-    // Initialize IoU slider
     iouSlider = document.getElementById('iouSlider');
     iouValueDisplay = document.getElementById('iouValue');
 
@@ -1050,29 +1022,19 @@ document.addEventListener('DOMContentLoaded', () => {
             currentIouThreshold = parseFloat(event.target.value);
             iouValueDisplay.textContent = currentIouThreshold.toFixed(2);
 
-            const displayedImage = document.getElementById('displayedImage');
             if (activeModel.instance && activeModel.modelType === "yoloV5s" &&
-                displayedImage && displayedImage.style.display !== 'none') {
+                displayedImageElement.src && !displayedImageElement.classList.contains('hidden')) {
                 
                 console.log("IoU changed for YOLOv5s image, re-detecting...");
-                performImageDetection(displayedImage).then(predictions => {
+                performImageDetection(displayedImageElement).then(predictions => {
                     if (predictions) {
                         currentMainMediaPredictions = predictions; 
                         drawResults(predictions); 
                     }
                 });
-
-            } else if (isDetecting && activeModel.instance && activeModel.modelType === "yoloV5s" &&
-                       (video.srcObject || (video.src && !video.paused))) {
             }
         });
     }
 });
-
-[end of script.js]
-
-[end of script.js]
-
-[end of script.js]
 
 [end of script.js]
