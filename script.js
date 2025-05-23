@@ -35,6 +35,14 @@ let currentMainMediaPredictions = []; // For re-drawing static images with new t
 // Element references
 let confidenceSlider;
 let confidenceValueDisplay;
+let iouSlider;
+let iouValueDisplay;
+
+// Thresholds
+let currentConfidenceThreshold = 0.5; // Default to 50%
+let currentIouThreshold = 0.45; // Default IoU threshold
+
+let currentMainMediaPredictions = []; // For re-drawing static images with new threshold
 
 // Function to load the COCO-SSD model (Replaced by initializeDefaultModel and loadSelectedModel)
 // async function loadModel() { ... }
@@ -243,8 +251,8 @@ async function detectObjects() {
                     video.videoWidth,
                     video.videoHeight,
                     letterboxInfo,
-                    currentConfidenceThreshold
-                    // iouThreshold will use its default in postprocessOutputYoloV5s
+                    currentConfidenceThreshold,
+                    currentIouThreshold // ADD THIS
                 );
                 // If rawOutputTensor was an array and contained other tensors that need disposal:
                 if (Array.isArray(rawOutputTensor)) {
@@ -578,7 +586,8 @@ async function performImageDetection(imgElement) {
                 imgElement.naturalWidth,
                 imgElement.naturalHeight,
                 letterboxInfo,
-                currentConfidenceThreshold
+                currentConfidenceThreshold,
+                currentIouThreshold // ADD THIS
             );
             if (Array.isArray(rawOutputTensor)) {
                 for (let i = 1; i < rawOutputTensor.length; i++) {
@@ -729,39 +738,28 @@ function displayImageSummaries() {
 }
 
 async function postprocessOutputYoloV5s(
-    rawOutputTensor,      // Single tensor, e.g., shape [1, 25200, 85] for COCO (80 classes + 5 coords/obj_score)
+    rawOutputTensor,      // Single tensor, e.g., shape [1, 25200, 85]
     originalImageWidth,
     originalImageHeight,
     letterboxInfo,        // Contains { ratio, dw, dh, paddedWidth, paddedHeight }
-    confidenceThreshold,  // User-defined confidence threshold
-    iouThreshold = 0.45   // Default IoU threshold for NMS
+    confidenceThreshold,
+    iouThreshold = 0.45
 ) {
     if (!rawOutputTensor) {
         console.warn("YOLOv5 postprocess: rawOutputTensor is null or undefined.");
         return [];
     }
 
-    console.log("YOLOv5 Postprocessing: Input tensor shape:", rawOutputTensor.shape);
-    // Expected shape e.g. [1, 25200, 85] (1 batch, 25200 boxes, 5 (xywh, obj_score) + num_classes)
+    const outputData = await rawOutputTensor.array();
+    tf.dispose(rawOutputTensor);
 
-    const outputData = await rawOutputTensor.array(); // Get data as a JavaScript array
-    tf.dispose(rawOutputTensor); // Dispose the raw tensor as soon as data is extracted
+    const numClasses = outputData[0][0].length - 5; // 5 => x,y,w,h,objectness
+    const allFilteredBoxes = []; // To store boxes that pass initial confidence for per-class NMS
 
-    const boxes = [];        // To store [x, y, w, h]
-    const scores = [];       // To store confidence scores (objectness * class_score)
-    const classIndices = []; // To store class indices
-
-    const numClasses = rawOutputTensor.shape[2] - 5; // Assuming 5 + num_classes structure
-
-    // Step 1: Decode and filter boxes based on confidence
-    // This loop iterates through all potential bounding boxes predicted by the model.
-    // For each box, it calculates the actual confidence score and extracts box coordinates and class.
-    outputData[0].forEach(prediction => { // outputData[0] because batch size is 1
-        const objectness = prediction[4]; // Objectness score
-        if (objectness < confidenceThreshold) { // Early filter by objectness (can be part of overall confidence)
-            return; // Skip low objectness boxes
-        }
-
+    // Step 1: Decode all boxes and filter by combined confidence (objectness * class_score)
+    outputData[0].forEach(prediction => {
+        const objectness = prediction[4];
+        
         // Find the class with the highest score for this box
         let maxClassScore = 0;
         let bestClassIndex = -1;
@@ -773,99 +771,89 @@ async function postprocessOutputYoloV5s(
             }
         }
 
-        const finalScore = objectness * maxClassScore; // Combine objectness with class score
+        const finalScore = objectness * maxClassScore;
 
         if (finalScore > confidenceThreshold) {
-            // Extract box coordinates (center_x, center_y, width, height) - normalized to model input size (e.g., 640x640)
-            const cx = prediction[0]; // center_x
+            const cx = prediction[0]; // center_x relative to model input (e.g., 640x640)
             const cy = prediction[1]; // center_y
             const w = prediction[2];  // width
             const h = prediction[3];  // height
 
-            // Convert to top-left x, y for NMS functions (still normalized to model input size)
-            const x1 = cx - w / 2;
+            // Convert to [y1, x1, y2, x2] for tf.image.nonMaxSuppressionAsync
+            // These are still normalized to model input size (e.g., 640x640)
             const y1 = cy - h / 2;
-            // NMS functions in TFJS often expect [y1, x1, y2, x2]
-            // So, boxes for NMS should be [y1, x1, y1 + h, x1 + w] (normalized to model input size)
-            // However, our `drawResults` expects [x, y, width, height] in original image coords.
-            // We'll store [x1, y1, w, h] (top-left based, normalized to model input) for now,
-            // and convert to original image space *after* NMS.
+            const x1 = cx - w / 2;
+            const y2 = cy + h / 2;
+            const x2 = cx + w / 2;
 
-            boxes.push([x1, y1, x1 + w, y1 + h]); // Store as [x1, y1, x2, y2] for NMS
-            scores.push(finalScore);
-            classIndices.push(bestClassIndex);
+            allFilteredBoxes.push({
+                boxCoords: [y1, x1, y2, x2], // Correct order for NMS
+                score: finalScore,
+                classIndex: bestClassIndex,
+                // Store original cx,cy,w,h if needed for later, or recalculate from y1,x1,y2,x2
+                // For simplicity, we'll use y1,x1,y2,x2 to reconstruct for final output if needed
+            });
         }
     });
 
-    if (boxes.length === 0) {
-        console.log("YOLOv5 Postprocessing: No boxes passed confidence threshold.");
+    if (allFilteredBoxes.length === 0) {
+        console.log("YOLOv5 Postprocessing: No boxes passed initial confidence threshold.");
         return [];
     }
-    console.log(`YOLOv5 Postprocessing: ${boxes.length} boxes before NMS.`);
+    console.log(`YOLOv5 Postprocessing: ${allFilteredBoxes.length} boxes passed initial confidence before per-class NMS.`);
 
-
-    // Step 2: Perform Non-Max Suppression (NMS) per class
-    // TFJS NMS `tf.image.nonMaxSuppressionAsync` typically works on boxes for a single class at a time.
-    // Or, `nonMaxSuppressionWithScoreAsync` can handle multi-class if boxes are structured correctly,
-    // but it's often simpler to loop per class or use a combined NMS if available.
-    // For now, let's implement a simplified NMS approach (can be refined).
-    // A common approach:
-    // 1. Get all boxes exceeding confidence.
-    // 2. Apply NMS for each class independently.
-    
-    const nmsResultIndices = await tf.image.nonMaxSuppressionAsync(
-        boxes,           // tensor2d of shape [numBoxes, 4] -> [[y1,x1,y2,x2],...] TFJS wants this order
-        scores,          // tensor1d of shape [numBoxes]
-        100,             // maxOutputSize: Max number of boxes to select.
-        iouThreshold,    // iouThreshold
-        confidenceThreshold // scoreThreshold (optional, can filter again here)
-    );
-
-    const finalDetectionsIndices = await nmsResultIndices.array();
-    tf.dispose(nmsResultIndices);
-
-    console.log(`YOLOv5 Postprocessing: ${finalDetectionsIndices.length} boxes after NMS.`);
-
-    // Step 3: Map NMS results back to original image coordinates and format for drawResults
+    // Step 2: Perform Per-Class NMS
     const finalPredictions = [];
-    finalDetectionsIndices.forEach(index => {
-        const boxNMS = boxes[index]; // This is [x1_model, y1_model, x2_model, y2_model] normalized to model input
-        const score = scores[index];
-        const classIndex = classIndices[index];
-        const className = COCO_CLASSES[classIndex]; // Assuming COCO_CLASSES is available globally
+    for (let c = 0; c < numClasses; c++) {
+        // Filter boxes belonging to the current class 'c'
+        const classSpecificBoxes = allFilteredBoxes.filter(b => b.classIndex === c);
+        if (classSpecificBoxes.length === 0) {
+            continue;
+        }
 
-        // Denormalize and adjust for letterboxing
-        // boxNMS = [x1_model_norm, y1_model_norm, x2_model_norm, y2_model_norm]
-        let [x1_model_norm, y1_model_norm, x2_model_norm, y2_model_norm] = boxNMS;
+        const boxesForNMS = classSpecificBoxes.map(b => b.boxCoords);
+        const scoresForNMS = classSpecificBoxes.map(b => b.score);
 
-        // Scale back to padded image dimensions (e.g., 640x640)
-        // This step is implicitly handled if cx,cy,w,h were already relative to padded size.
-        // The zldrobit model outputs coordinates relative to the 640x640 input.
+        if (boxesForNMS.length > 0) {
+            const nmsResultIndices = await tf.image.nonMaxSuppressionAsync(
+                boxesForNMS,       // tensor2d of shape [numBoxes, 4] with [y1,x1,y2,x2]
+                scoresForNMS,      // tensor1d of shape [numBoxes]
+                100,               // maxOutputSize: Max number of boxes to select per class.
+                iouThreshold,      // iouThreshold
+                confidenceThreshold// scoreThreshold (can re-apply, or rely on initial filter)
+            );
 
-        // Adjust for letterbox padding and ratio to get coordinates in original image space
-        // (x_model - dw) / ratio = x_original
-        // (y_model - dh) / ratio = y_original
-        // w_original = w_model / ratio
-        // h_original = h_model / ratio
-        
-        const x1_orig = (x1_model_norm * letterboxInfo.paddedWidth - letterboxInfo.dw) / letterboxInfo.ratio;
-        const y1_orig = (y1_model_norm * letterboxInfo.paddedHeight - letterboxInfo.dh) / letterboxInfo.ratio;
-        const x2_orig = (x2_model_norm * letterboxInfo.paddedWidth - letterboxInfo.dw) / letterboxInfo.ratio;
-        const y2_orig = (y2_model_norm * letterboxInfo.paddedHeight - letterboxInfo.dh) / letterboxInfo.ratio;
+            const selectedIndicesForClass = await nmsResultIndices.array();
+            tf.dispose(nmsResultIndices);
 
-        finalPredictions.push({
-            class: className,
-            score: score,
-            bbox: [
-                x1_orig,
-                y1_orig,
-                x2_orig - x1_orig, // width
-                y2_orig - y1_orig  // height
-            ]
-        });
-    });
+            selectedIndicesForClass.forEach(selectedIndex => {
+                const selectedBoxInfo = classSpecificBoxes[selectedIndex];
+                const className = COCO_CLASSES[selectedBoxInfo.classIndex];
 
-    console.log("YOLOv5 Postprocessing: Final formatted predictions:", finalPredictions.length);
+                // boxCoords are [y1_model, x1_model, y2_model, x2_model] normalized to model input
+                let [y1_model_norm, x1_model_norm, y2_model_norm, x2_model_norm] = selectedBoxInfo.boxCoords;
+                
+                // Adjust for letterbox padding and ratio to get coordinates in original image space
+                const x1_orig = (x1_model_norm * letterboxInfo.paddedWidth - letterboxInfo.dw) / letterboxInfo.ratio;
+                const y1_orig = (y1_model_norm * letterboxInfo.paddedHeight - letterboxInfo.dh) / letterboxInfo.ratio;
+                const x2_orig = (x2_model_norm * letterboxInfo.paddedWidth - letterboxInfo.dw) / letterboxInfo.ratio;
+                const y2_orig = (y2_model_norm * letterboxInfo.paddedHeight - letterboxInfo.dh) / letterboxInfo.ratio;
+
+                finalPredictions.push({
+                    class: className,
+                    score: selectedBoxInfo.score,
+                    bbox: [
+                        x1_orig,
+                        y1_orig,
+                        x2_orig - x1_orig, // width
+                        y2_orig - y1_orig  // height
+                    ]
+                });
+            });
+        }
+    }
+
+    console.log("YOLOv5 Postprocessing: Final formatted predictions after per-class NMS:", finalPredictions.length);
     return finalPredictions;
 }
 
