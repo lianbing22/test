@@ -13,14 +13,14 @@
 
     <!-- Top Navigation Bar -->
     <header class="bg-blue-600 text-white p-4 shadow-md"> <!-- Tailwind: blue background, white text, padding, shadow -->
-        <h1 class="text-xl">AI 视频/图像分析平台</h1> <!-- Tailwind: large text -->
+        <h1 class="text-lg sm:text-xl">AI 视频/图像分析平台</h1> <!-- Tailwind: large text -->
     </header>
 
     <!-- Main Content Area -->
-    <main class="flex flex-1 overflow-hidden"> <!-- Tailwind: flex grow, hide overflow -->
+    <main class="flex flex-col sm:flex-row flex-1 overflow-hidden"> <!-- Tailwind: flex grow, hide overflow -->
 
         <!-- Left Control Panel -->
-        <aside id="left-panel" class="w-1/4 bg-gray-100 p-4 overflow-y-auto"> <!-- Tailwind: 1/4 width, light gray bg, padding, vertical scroll -->
+        <aside id="left-panel" class="w-full sm:w-1/4 bg-gray-100 p-4 overflow-y-auto order-1 sm:order-none"> <!-- Tailwind: 1/4 width, light gray bg, padding, vertical scroll -->
             <h2 class="text-lg font-semibold mb-4">控制面板</h2>
             <div id="controls-container">
                 <!-- Existing buttons will be moved here later -->
@@ -34,22 +34,29 @@
             </div>
             <div id="image-upload-container" class="mt-4">
                 <label for="imageUpload" class="block mb-2 text-sm font-medium text-gray-900">上传图片文件 (JPG, PNG, WebP):</label>
-                <input type="file" id="imageUpload" accept="image/jpeg,image/png,image/webp" class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none">
+                <input type="file" id="imageUpload" accept="image/jpeg,image/png,image/webp" multiple class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none">
             </div>
         </aside>
 
         <!-- Central Video/Image Area -->
-        <section id="main-content" class="flex-1 p-4 flex flex-col items-center justify-center bg-gray-200"> <!-- Tailwind: flex grow, padding, center content, medium gray bg -->
-            <div id="container" class="relative w-full max-w-3xl aspect-video bg-black"> <!-- Tailwind: relative, full width, max width, aspect ratio for video, black bg -->
+        <section id="main-content" class="flex-1 p-2 sm:p-4 flex flex-col items-center justify-center bg-gray-200 order-2 sm:order-none"> <!-- Tailwind: flex grow, padding, center content, medium gray bg -->
+            <div id="container" class="relative w-full sm:max-w-3xl aspect-video bg-black"> <!-- Tailwind: relative, full width, max width, aspect ratio for video, black bg -->
                 <video id="video" autoplay playsinline class="w-full h-full"></video> <!-- Tailwind: full width and height -->
                 <canvas id="canvas" class="absolute top-0 left-0"></canvas> <!-- Tailwind: absolute positioning -->
             </div>
         </section>
 
         <!-- Right Results Panel -->
-        <aside id="right-panel" class="w-1/4 bg-gray-100 p-4 overflow-y-auto"> <!-- Tailwind: 1/4 width, light gray bg, padding, vertical scroll -->
-            <h2 id="results-header" class="text-lg font-semibold mb-4">检测到的物体:</h2>
-            <ul id="objectList" class="space-y-2"></ul> <!-- Tailwind: spacing between list items -->
+        <aside id="right-panel" class="w-full sm:w-1/4 bg-gray-100 p-4 overflow-y-auto order-3 sm:order-none"> <!-- Tailwind: 1/4 width, light gray bg, padding, vertical scroll -->
+            <h2 id="image-summary-header" class="text-lg font-semibold mb-2">图片处理结果摘要:</h2> <!-- New Header -->
+            <ul id="imageSummaryList" class="space-y-2 mb-4 max-h-48 sm:max-h-60 overflow-y-auto border border-gray-300 p-2 rounded">
+                <!-- Image summaries will be populated here by JavaScript -->
+            </ul>
+
+            <h2 id="results-header" class="text-lg font-semibold mb-2">当前选中媒体的检测详情:</h2> <!-- Modified Header for clarity -->
+            <ul id="objectList" class="space-y-1">
+                <!-- Detection details for the currently active media (video, single image, or selected batch image) -->
+            </ul>
         </aside>
 
     </main>
