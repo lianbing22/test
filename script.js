@@ -5,6 +5,7 @@ const objectList = document.getElementById('objectList');
 const canvas = document.getElementById('canvas');
 const context = canvas.getContext('2d');
 const videoUpload = document.getElementById('videoUpload');
+const imageUpload = document.getElementById('imageUpload'); // Added
 
 let model; // To hold the COCO-SSD model
 let isDetecting = false;
@@ -67,9 +68,18 @@ startButton.addEventListener('click', async () => {
     if (video.src && video.src.startsWith('blob:')) {
         URL.revokeObjectURL(video.src); // Revoke old object URL
         video.src = ""; // Clear src
-        video.controls = false; // Hide controls
+        // video.controls = false; // controls are set below
         console.log("Cleared previously loaded video file.");
     }
+    // Hide/remove existing image if any
+    const existingImage = document.getElementById('displayedImage');
+    if (existingImage) {
+        existingImage.remove();
+    }
+    document.getElementById('container').style.display = 'block'; // Ensure video container is visible
+    video.style.display = 'block'; // Make video element visible
+    canvas.style.display = 'block'; // Ensure canvas is visible
+    video.controls = false; // Camera stream doesn't need default controls
 
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         try {
@@ -133,7 +143,17 @@ function handleVideoUpload(event) {
         if (video.src && video.src.startsWith('blob:')) {
             URL.revokeObjectURL(video.src);
             console.log("Revoked old object URL from previous file upload.");
+            video.src = ""; // Clear src
         }
+        // Hide/remove existing image if any
+        const existingImage = document.getElementById('displayedImage');
+        if (existingImage) {
+            existingImage.remove();
+        }
+        document.getElementById('container').style.display = 'block'; // Ensure video container is visible
+        video.style.display = 'block'; // Make video element visible
+        canvas.style.display = 'block'; // Ensure canvas is visible
+        // video.controls = true; // controls are set below
 
         isDetecting = false;
         context.clearRect(0, 0, canvas.width, canvas.height);
@@ -166,6 +186,93 @@ function handleVideoUpload(event) {
 }
 
 videoUpload.addEventListener('change', handleVideoUpload);
+
+function handleImageUpload(event) {
+    const file = event.target.files[0];
+    if (file) {
+        // A. Stop any ongoing video/camera activity and clear displays
+        if (video.srcObject) { // Stop camera stream
+            const stream = video.srcObject;
+            const tracks = stream.getTracks(); // Corrected: define tracks
+            tracks.forEach(track => track.stop());
+            video.srcObject = null;
+        }
+        if (video.src && video.src.startsWith('blob:')) { // Clear uploaded video
+            URL.revokeObjectURL(video.src);
+            video.src = "";
+        }
+        video.style.display = 'none'; // Hide video element
+        video.controls = false;
+        isDetecting = false;
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        objectList.innerHTML = '';
+
+        // B. Read and display the image
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            // Remove previous image if any
+            const existingImage = document.getElementById('displayedImage');
+            if (existingImage) {
+                existingImage.remove();
+            }
+
+            // Create and display new image
+            const img = document.createElement('img');
+            img.id = 'displayedImage';
+            img.src = e.target.result;
+            img.className = 'w-full h-full object-contain'; // Tailwind for fitting image in container
+
+            const videoContainer = document.getElementById('container'); // This is the video's parent
+            videoContainer.style.display = 'block'; // Ensure #container is visible
+            video.style.display = 'none'; // Keep video hidden
+            canvas.style.display = 'block'; // Keep canvas visible for drawing over image
+
+            videoContainer.appendChild(img); // Add image to the same container as video/canvas
+
+            img.onload = () => {
+                // C. Adjust canvas size to match image
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                
+                // Ensure #container's aspect ratio doesn't clip the image (optional refinement)
+                // videoContainer.style.aspectRatio = `${img.naturalWidth} / ${img.naturalHeight}`;
+
+
+                console.log("Image loaded, canvas resized. Ready for detection.");
+                // D. TODO in next step: Perform object detection on the image
+                performImageDetection(img); 
+            }
+        }
+        reader.readAsDataURL(file);
+    }
+}
+
+imageUpload.addEventListener('change', handleImageUpload);
+
+async function performImageDetection(imgElement) {
+    if (!model || !imgElement) {
+        console.error("Model or image element not available for detection.");
+        return;
+    }
+
+    console.log("Performing detection on image...");
+    try {
+        const predictions = await model.detect(imgElement);
+        drawResults(predictions); // Reuse the existing function to draw results
+        console.log("Image detection complete. Predictions:", predictions);
+
+        // Optional: Update any UI or state to indicate detection is done for the image.
+        // isDetecting = false; // For static images, detection is a one-off event.
+        // However, isDetecting is mostly used for requestAnimationFrame loops.
+        // We might not need to set it to false here unless it causes issues
+        // with how other parts of the UI (like stop buttons) behave.
+        // For now, let's assume drawResults is sufficient.
+
+    } catch (err) {
+        console.error("Error during image object detection: ", err);
+        alert("图片物体检测时发生错误。"); // Chinese alert
+    }
+}
 
 // Load the model when the script loads
 loadModel();
