@@ -36,10 +36,74 @@
                 <label for="imageUpload" class="block mb-2 text-sm font-medium text-gray-900">上传图片文件 (JPG, PNG, WebP):</label>
                 <input type="file" id="imageUpload" accept="image/jpeg,image/png,image/webp" multiple class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none">
             </div>
+
+            <!-- Model Selector -->
+            <div id="model-selector-container" class="mt-6">
+                <h3 class="text-md font-semibold mb-3 text-gray-800">选择分析模型:</h3>
+                <div class="space-y-2">
+                    <!-- COCO-SSD Model Option -->
+                    <button 
+                        id="model-cocoSsd" 
+                        data-model-name="cocoSsd"
+                        class="model-selector-btn w-full text-left p-3 border border-gray-300 rounded-lg shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-blue-100 ring-2 ring-blue-500" 
+                        aria-pressed="true" <!-- Indicates this is initially selected -->
+                    >
+                        <div class="flex items-center justify-between">
+                            <span class="font-medium text-sm text-gray-900">COCO-SSD</span>
+                            <svg id="checkmark-cocoSsd" class="w-5 h-5 text-blue-600" viewBox="0 0 20 20" fill="currentColor"> <!-- Visible checkmark for selected -->
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <p class="text-xs text-gray-600 mt-1">速度与精度均衡，通用物体检测。</p>
+                    </button>
+
+                    <!-- MobileNet SSD Model Option -->
+                    <button 
+                        id="model-mobileNetSsd" 
+                        data-model-name="mobileNetSsd"
+                        class="model-selector-btn w-full text-left p-3 border border-gray-300 rounded-lg shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-white"
+                        aria-pressed="false"
+                    >
+                        <div class="flex items-center justify-between">
+                            <span class="font-medium text-sm text-gray-900">MobileNet SSD</span>
+                             <svg id="checkmark-mobileNetSsd" class="w-5 h-5 text-blue-600 hidden" viewBox="0 0 20 20" fill="currentColor"> <!-- Hidden checkmark -->
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <p class="text-xs text-gray-600 mt-1">轻量快速，适合移动端和边缘设备。</p>
+                    </button>
+                    
+                    <!-- Placeholder for future YOLOv5s -->
+                    <!-- 
+                    <button 
+                        id="model-yoloV5s" 
+                        data-model-name="yoloV5s"
+                        class="model-selector-btn w-full text-left p-3 border border-gray-300 rounded-lg shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-white"
+                        aria-pressed="false"
+                    >
+                        <div class="flex items-center justify-between">
+                            <span class="font-medium text-sm text-gray-900">YOLOv5s</span>
+                            <svg id="checkmark-yoloV5s" class="w-5 h-5 text-blue-600 hidden" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <p class="text-xs text-gray-600 mt-1">高精度，适合复杂场景（可能较慢）。</p>
+                    </button>
+                    -->
+                </div>
+                <p id="model-loading-status" class="text-xs text-gray-500 mt-2 h-4"></p> <!-- For loading status messages -->
+            </div>
         </aside>
 
         <!-- Central Video/Image Area -->
         <section id="main-content" class="flex-1 p-2 sm:p-4 flex flex-col items-center justify-center bg-gray-200 order-2 sm:order-none"> <!-- Tailwind: flex grow, padding, center content, medium gray bg -->
+            <div id="main-content-placeholder" class="text-center text-gray-500 my-auto hidden"> <!-- Initially hidden -->
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">无活动媒体</h3>
+                <p class="mt-1 text-sm text-gray-500">请从左侧选择输入源或上传文件。</p>
+            </div>
             <div id="container" class="relative w-full sm:max-w-3xl aspect-video bg-black"> <!-- Tailwind: relative, full width, max width, aspect ratio for video, black bg -->
                 <video id="video" autoplay playsinline class="w-full h-full"></video> <!-- Tailwind: full width and height -->
                 <canvas id="canvas" class="absolute top-0 left-0"></canvas> <!-- Tailwind: absolute positioning -->

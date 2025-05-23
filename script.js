@@ -7,33 +7,224 @@ const context = canvas.getContext('2d');
 const videoUpload = document.getElementById('videoUpload');
 const imageUpload = document.getElementById('imageUpload'); // Added
 
-let model; // To hold the COCO-SSD model
+const COCO_CLASSES = [
+    'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
+    'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow',
+    'elephant', 'bear', 'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
+    'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat', 'baseball glove', 'skateboard', 'surfboard',
+    'tennis racket', 'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple',
+    'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch',
+    'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote', 'keyboard', 'cell phone',
+    'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy bear',
+    'hair drier', 'toothbrush'
+]; // 90 classes
+
+
+// let model; // Replaced with activeModel object
+let activeModel = {
+    name: null, // e.g., "cocoSsd", "mobileNetSsd"
+    instance: null, // Stores the loaded model object
+    isLoading: false,
+    error: null
+};
 let isDetecting = false;
 let batchImageResults = []; // Added for batch results
 
-// Function to load the COCO-SSD model
-async function loadModel() {
+// Function to load the COCO-SSD model (Replaced by initializeDefaultModel and loadSelectedModel)
+// async function loadModel() { ... }
+
+function updateModelSelectorUI(selectedModelName) {
+    const buttons = document.querySelectorAll('.model-selector-btn');
+    buttons.forEach(button => {
+        const modelName = button.dataset.modelName;
+        const checkmark = document.getElementById(`checkmark-${modelName}`); // Assumes checkmark IDs like 'checkmark-cocoSsd'
+
+        if (modelName === selectedModelName) {
+            button.classList.add('bg-blue-100', 'ring-2', 'ring-blue-500');
+            button.classList.remove('bg-white');
+            button.setAttribute('aria-pressed', 'true');
+            if (checkmark) checkmark.classList.remove('hidden');
+        } else {
+            button.classList.remove('bg-blue-100', 'ring-2', 'ring-blue-500');
+            button.classList.add('bg-white');
+            button.setAttribute('aria-pressed', 'false');
+            if (checkmark) checkmark.classList.add('hidden');
+        }
+    });
+}
+
+function setLoadingState(isLoading, message = "") {
+    activeModel.isLoading = isLoading;
+    const loadingStatusEl = document.getElementById('model-loading-status');
+    const modelButtons = document.querySelectorAll('.model-selector-btn');
+
+    if (loadingStatusEl) {
+        loadingStatusEl.textContent = message;
+    }
+
+    modelButtons.forEach(button => {
+        button.disabled = isLoading;
+        if (isLoading) {
+            button.classList.add('opacity-50', 'cursor-not-allowed');
+        } else {
+            button.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    });
+    // Also disable/enable other main action buttons if needed
+    startButton.disabled = isLoading || (activeModel.instance === null); // Keep startButton disabled if no model or loading
+    videoUpload.disabled = isLoading;
+    imageUpload.disabled = isLoading;
+}
+
+async function loadSelectedModel(modelName) {
+    if (activeModel.isLoading) {
+        console.log("Model loading already in progress.");
+        return;
+    }
+    if (activeModel.name === modelName && activeModel.instance) {
+        console.log(`${modelName} is already loaded.`);
+        return;
+    }
+
+    setLoadingState(true, `正在加载 ${modelName} 模型...`);
+    activeModel.error = null; // Clear previous error
+
     try {
-        model = await cocoSsd.load();
-        console.log("COCO-SSD model loaded successfully.");
-        startButton.disabled = false; // Enable start button
+        let newModelInstance;
+        if (modelName === "cocoSsd") {
+            newModelInstance = await cocoSsd.load();
+        } else if (modelName === "mobileNetSsd") {
+            // IMPORTANT: Replace with a valid TFJS GraphModel URL for MobileNet SSD
+            const modelUrl = 'https://tfhub.dev/tensorflow/tfjs-model/ssd_mobilenet_v2/coco/uint8/2/default/1/model.json?tfjs-format=graph-model'; // Example URL, ensure it's a GraphModel
+            // Note: MobileNet SSD from TF Hub might have different output signature than cocoSsd.load()
+            // This part will likely need adaptation in the 'detect' and 'drawResults' logic later.
+            newModelInstance = await tf.loadGraphModel(modelUrl);
+            // We'll need a way to know the model type for later detection logic
+            newModelInstance.isGraphModel = true; // Custom flag
+        } else {
+            throw new Error(`未知模型: ${modelName}`);
+        }
+
+        activeModel.name = modelName;
+        activeModel.instance = newModelInstance;
+        console.log(`${modelName} model loaded successfully.`);
+        setLoadingState(false, `${modelName} 加载完成!`);
+        updateModelSelectorUI(modelName);
+
     } catch (err) {
-        console.error("Error loading the COCO-SSD model: ", err);
-        alert("加载 COCO-SSD 模型出错。物体检测将无法工作。");
+        console.error(`Error loading ${modelName} model: `, err);
+        activeModel.error = err;
+        activeModel.instance = null; // Ensure no stale model instance
+        // Don't reset activeModel.name, so UI can reflect which model failed to load
+        setLoadingState(false, `${modelName} 加载失败。请稍后再试或选择其他模型。`);
+        // updateModelSelectorUI(null); // Optionally clear selection or show error state on selector
+    }
+}
+
+async function initializeDefaultModel() {
+    // Load COCO-SSD by default
+    await loadSelectedModel("cocoSsd");
+    // Original logic to enable startButton was in loadModel, setLoadingState now handles it.
+    // startButton.disabled = activeModel.instance === null;
+}
+
+// Removed initializeDefaultModel function as its logic is moved to DOMContentLoaded
+
+function clearAllMediaAndResults() {
+    console.log("Clearing all media and results due to model switch...");
+
+    // Stop camera if active
+    if (video.srcObject) {
+        const stream = video.srcObject;
+        stream.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
+    }
+    // Clear video file if active
+    if (video.src && video.src.startsWith('blob:')) {
+        URL.revokeObjectURL(video.src);
+        video.src = "";
+    }
+    video.style.display = 'block'; // Default to showing video element (empty)
+    video.controls = false;
+
+    // Remove displayed image if active
+    const existingImage = document.getElementById('displayedImage');
+    if (existingImage) {
+        existingImage.remove();
+    }
+     // Ensure video container is visible, and video element itself is displayed (though src might be empty)
+    // document.getElementById('container').style.display = 'block'; // Replaced by placeholder logic
+
+    // Hide media container, show placeholder
+    const mediaContainer = document.getElementById('container');
+    const placeholder = document.getElementById('main-content-placeholder');
+    if (mediaContainer) mediaContainer.style.display = 'none';
+    if (placeholder) placeholder.classList.remove('hidden');
+
+
+    // Clear detection state and UI lists
+    isDetecting = false;
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.style.display = 'none'; // Also hide canvas when no media
+
+    objectList.innerHTML = '<li class="text-gray-500">请选择媒体并开始分析。</li>';
+
+    batchImageResults = []; // Moved from individual handlers to here for centralization
+    const summaryListElement = document.getElementById('imageSummaryList');
+    if (summaryListElement) {
+        summaryListElement.innerHTML = '<li class="text-gray-500">上传图片以查看摘要。</li>';
+    }
+
+    const loadingStatusEl = document.getElementById('model-loading-status');
+    if (loadingStatusEl) {
+        // Message updated when model actually starts loading via setLoadingState
+        // For now, just ensure it's not showing a stale "success" message for a model.
+        // If activeModel.error is set, it will be shown by setLoadingState.
+        if (!activeModel.isLoading && !activeModel.error) {
+             loadingStatusEl.textContent = '选择模型并加载媒体进行分析。';
+        } else if (activeModel.error) {
+            loadingStatusEl.textContent = `${activeModel.name || '模型'} 加载失败。请重试。`;
+        }
     }
 }
 
 async function detectObjects() {
     if (!isDetecting) return;
+    if (!activeModel.instance) return; // No model loaded
 
-    if (video.readyState >= 3) { // HAVE_FUTURE_DATA or HAVE_ENOUGH_DATA
-        try {
-            const predictions = await model.detect(video);
-            drawResults(predictions); // Call new function to draw results
-        } catch (err) {
-            console.error("Error during object detection: ", err);
-        }
+    let predictions = [];
+    if (activeModel.instance.isGraphModel) {
+        const inputTensor = preprocessInput(video); // Assuming default shape [1,300,300,3]
+        // For TF Hub models, you might need to specify output node names if there are multiple.
+        // If model.outputs is available, one could use: const outputNodes = model.outputs.map(o => o.name);
+        // const outputTensors = await activeModel.instance.executeAsync(inputTensor, outputNodes);
+        const outputTensors = await activeModel.instance.executeAsync(inputTensor);
+        tf.dispose(inputTensor); // Dispose input tensor
+
+        predictions = await postprocessOutputMobileNetSsd(outputTensors, video.videoWidth, video.videoHeight);
+        // outputTensors are disposed inside postprocessOutputMobileNetSsd
+    } else if (activeModel.instance) { // For COCO-SSD like models
+        predictions = await activeModel.instance.detect(video);
     }
+    // Removed else { predictions = []; } as it's initialized above
+
+    drawResults(predictions);
+
+    // if (activeModel.instance.isGraphModel) {
+    //     // console.warn("GraphModel detection logic not yet implemented for video.");
+    //     // For now, skip detection or show a message.
+    //     // To prevent errors, let's just clear results and return if it's a graph model.
+    //     // This will be addressed when integrating MobileNet SSD properly.
+    //     // drawResults([]); // Clear previous bounding boxes
+    //     // return; // Skip detection for graph model on video for now
+    // } else if (video.readyState >= 3) { // HAVE_FUTURE_DATA or HAVE_ENOUGH_DATA
+    //     try {
+    //         const predictions = await activeModel.instance.detect(video);
+    //         drawResults(predictions); // Call new function to draw results
+    //     } catch (err) {
+    //         console.error("Error during object detection: ", err);
+    //     }
+    // }
     requestAnimationFrame(detectObjects); // Continue the loop
 }
 
@@ -74,10 +265,10 @@ startButton.addEventListener('click', async () => {
     }
     // Clear batch image results and summary list
     batchImageResults = [];
-    const imageSummaryListElement = document.getElementById('imageSummaryList'); // Renamed for consistency
+    const imageSummaryListElement = document.getElementById('imageSummaryList'); // Keep one
     if (imageSummaryListElement) imageSummaryListElement.innerHTML = '';
-    const imageSummaryListElement = document.getElementById('imageSummaryList'); // Renamed for consistency
-    if (imageSummaryListElement) imageSummaryListElement.innerHTML = '';
+    // const imageSummaryListElement = document.getElementById('imageSummaryList'); // Remove this duplicate
+    // if (imageSummaryListElement) imageSummaryListElement.innerHTML = ''; // And this
     document.getElementById('objectList').innerHTML = ''; // Also clear main object list
 
     // Hide/remove existing image if any
@@ -85,9 +276,11 @@ startButton.addEventListener('click', async () => {
     if (existingImage) {
         existingImage.remove();
     }
-    document.getElementById('container').style.display = 'block'; // Ensure video container is visible
-    video.style.display = 'block'; // Make video element visible
-    canvas.style.display = 'block'; // Ensure canvas is visible
+    // Show media container, hide placeholder
+    document.getElementById('main-content-placeholder').classList.add('hidden');
+    document.getElementById('container').style.display = 'block'; // Or 'relative' if that's its usual display
+    video.style.display = 'block';
+    canvas.style.display = 'block';
     video.controls = false; // Camera stream doesn't need default controls
 
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -167,9 +360,11 @@ function handleVideoUpload(event) {
         if (existingImage) {
             existingImage.remove();
         }
-        document.getElementById('container').style.display = 'block'; // Ensure video container is visible
-        video.style.display = 'block'; // Make video element visible
-        canvas.style.display = 'block'; // Ensure canvas is visible
+    // Show media container, hide placeholder
+    document.getElementById('main-content-placeholder').classList.add('hidden');
+    document.getElementById('container').style.display = 'block';
+    video.style.display = 'block';
+    canvas.style.display = 'block';
         // video.controls = true; // controls are set below
 
         isDetecting = false;
@@ -292,29 +487,39 @@ async function handleImageUpload(event) { // Make it async
     displayImageSummaries(); // New call
 
     if (batchImageResults.length > 0) {
-        // For now, don't automatically display the first image's full details.
-        // User will need to click on a summary.
-        // Clear main display if it's not already.
+        // Placeholder remains visible. User needs to click a summary.
+        document.getElementById('main-content-placeholder').classList.remove('hidden');
+        document.getElementById('container').style.display = 'none'; // Keep media container hidden
+        canvas.style.display = 'none';
         const existingMainImage = document.getElementById('displayedImage');
-        if (existingMainImage) existingMainImage.remove();
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        document.getElementById('objectList').innerHTML = '<li class="text-gray-500">从上方摘要列表选择一张图片查看详情。</li>';
-
+        if (existingMainImage) existingMainImage.remove(); // Ensure no old main image
+        context.clearRect(0,0, canvas.width, canvas.height);
+        document.getElementById('objectList').innerHTML = '<li class="text-gray-500">从摘要列表选择图片查看详情。</li>';
     } else {
-         document.getElementById('objectList').innerHTML = ''; // Clear if no batch results
+        // No images processed, show placeholder
+        document.getElementById('main-content-placeholder').classList.remove('hidden');
+        document.getElementById('container').style.display = 'none';
+        canvas.style.display = 'none';
+        document.getElementById('objectList').innerHTML = ''; // Or a "no images processed" message
     }
 }
 
 imageUpload.addEventListener('change', handleImageUpload);
 
 async function performImageDetection(imgElement) {
-    if (!model || !imgElement) {
+    if (!activeModel.instance || !imgElement) {
         console.error("Model or image element not available for detection.");
         return null; // Return null or empty array on error
     }
+    if (activeModel.instance.isGraphModel) {
+        // console.warn("GraphModel detection logic not yet implemented for image.");
+        // This will be properly implemented in the next step.
+        // For now, let's return empty predictions to avoid breaking flow.
+        return []; // Placeholder
+    }
     console.log("Performing detection on image:", imgElement.id || imgElement.src.substring(0,30));
     try {
-        const predictions = await model.detect(imgElement);
+        const predictions = await activeModel.instance.detect(imgElement);
         console.log("Image detection complete. Predictions:", predictions);
         return predictions;
     } catch (err) {
@@ -407,6 +612,11 @@ function handleSummaryItemClick(imageId) {
     // Ensure video element is hidden if we are showing an image
     document.getElementById('video').style.display = 'none';
 
+    // Show media container, hide placeholder
+    document.getElementById('main-content-placeholder').classList.add('hidden');
+    const videoContainer = document.getElementById('container');
+    videoContainer.style.display = 'block'; // Show the media container
+
 
     // 2. Display the selected image in the main content area
     const img = document.createElement('img');
@@ -414,8 +624,8 @@ function handleSummaryItemClick(imageId) {
     img.src = selectedResult.dataURL;
     img.className = 'w-full h-full object-contain'; // Match styling of single image display
 
-    const videoContainer = document.getElementById('container'); // Parent of video/canvas
-    videoContainer.style.display = 'block'; // Ensure #container is visible
+    // const videoContainer = document.getElementById('container'); // Parent of video/canvas - already defined
+    // videoContainer.style.display = 'block'; // Ensure #container is visible - already done
     // Ensure canvas is a direct child of 'container' or its positioning is correct relative to 'img'
     videoContainer.appendChild(img); // Add image to the container
 
