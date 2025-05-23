@@ -2,27 +2,83 @@
 body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Base text color set in index.html via Tailwind classes on body */
 }
 
-/* For browsers that don't support Tailwind's appearance-none on range inputs fully for thumb */
+/* Custom styles for range input thumbs to match the new theme */
+.slider-thumb-cyan::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px; 
+    height: 16px; 
+    background: #0891b2; /* Tailwind cyan-600 */
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.15s ease-in-out, background-color 0.2s ease-in-out;
+}
+.slider-thumb-cyan:hover::-webkit-slider-thumb, .slider-thumb-cyan:focus::-webkit-slider-thumb {
+    transform: scale(1.15);
+}
+.slider-thumb-cyan:active::-webkit-slider-thumb {
+    transform: scale(1.25);
+    background-color: #06b6d4; /* cyan-500 */
+}
+
+
+.slider-thumb-cyan::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: #0891b2; /* Tailwind cyan-600 */
+    border-radius: 50%;
+    cursor: pointer;
+    border: none; 
+    transition: transform 0.15s ease-in-out, background-color 0.2s ease-in-out;
+}
+.slider-thumb-cyan:hover::-moz-range-thumb, .slider-thumb-cyan:focus::-moz-range-thumb {
+    transform: scale(1.15);
+}
+.slider-thumb-cyan:active::-moz-range-thumb {
+    transform: scale(1.25);
+    background-color: #06b6d4; /* cyan-500 */
+}
+
+/* Fallback for browsers that might not apply .slider-thumb-cyan directly to the pseudo-element,
+   or if the class isn't applied to the input in HTML. This is a general override. */
 input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 16px; /* Or your desired size */
-    height: 16px; /* Or your desired size */
-    background: #3b82f6; /* Tailwind's blue-500 */
+    width: 16px; 
+    height: 16px; 
+    background: #0891b2; /* Default to cyan-600 if not overridden by a more specific class */
     border-radius: 50%;
     cursor: pointer;
+    transition: transform 0.15s ease-in-out, background-color 0.2s ease-in-out;
+}
+input[type="range"]:hover::-webkit-slider-thumb, input[type="range"]:focus::-webkit-slider-thumb {
+    transform: scale(1.15);
+}
+input[type="range"]:active::-webkit-slider-thumb {
+    transform: scale(1.25);
+    background-color: #06b6d4; /* cyan-500 */
 }
 
 input[type="range"]::-moz-range-thumb {
     width: 16px;
     height: 16px;
-    background: #3b82f6;
+    background: #0891b2; /* Default to cyan-600 */
     border-radius: 50%;
     cursor: pointer;
     border: none; 
+    transition: transform 0.15s ease-in-out, background-color 0.2s ease-in-out;
 }
+input[type="range"]:hover::-moz-range-thumb, input[type="range"]:focus::-moz-range-thumb {
+    transform: scale(1.15);
+}
+input[type="range"]:active::-moz-range-thumb {
+    transform: scale(1.25);
+    background-color: #06b6d4; /* cyan-500 */
+}
+
 
 /* Custom scrollbar for webkit browsers (optional, for aesthetics) */
 /* ::-webkit-scrollbar {
@@ -30,32 +86,32 @@ input[type="range"]::-moz-range-thumb {
     height: 8px;
 }
 ::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: #1e293b; // slate-800 for the track
     border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb {
-    background: #c5c5c5;
+    background: #334155; // slate-700 for the thumb
     border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8; 
+    background: #475569; // slate-600 for hover
 } */
 
-/* Basic Toast Animation (Can be enhanced with Tailwind config or more CSS) */
+/* Basic Toast Animation - Keyframes define motion and opacity, colors are set via Tailwind in JS */
 .animate-fade-in-right {
-    animation: справа-внутрь 0.3s ease-out forwards;
+    animation: справа-внутрь 0.25s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
 }
 .animate-fade-out-right {
-    animation: справа-наружу 0.3s ease-in forwards;
+    animation: справа-наружу 0.25s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
 }
 
-@keyframes справа-внутрь {
-    from { opacity: 0; transform: translateX(20px); }
-    to { opacity: 1; transform: translateX(0); }
+@keyframes справа-внутрь { /* Russian "fade-in-right" */
+    from { opacity: 0; transform: translateX(30px) scale(0.95); }
+    to { opacity: 1; transform: translateX(0) scale(1); }
 }
-@keyframes справа-наружу {
-    from { opacity: 1; transform: translateX(0); }
-    to { opacity: 0; transform: translateX(20px); }
+@keyframes справа-наружу { /* Russian "fade-out-right" */
+    from { opacity: 1; transform: translateX(0) scale(1); }
+    to { opacity: 0; transform: translateX(30px) scale(0.95); }
 }
 
 /* Ensure video controls are not displayed when we use our custom controls or no controls */

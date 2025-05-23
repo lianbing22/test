@@ -9,10 +9,10 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.3/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="flex flex-col h-screen font-sans bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+<body class="flex flex-col h-screen font-sans bg-slate-900 text-slate-200">
 
     <!-- Top Navigation Bar -->
-    <header class="bg-blue-600 text-white p-3 sm:p-4 shadow-md sticky top-0 z-40">
+    <header class="bg-slate-800 text-slate-100 p-3 sm:p-4 shadow-md sticky top-0 z-40 border-b border-cyan-500">
         <h1 class="text-lg sm:text-xl font-semibold">AI 视频/图像分析平台</h1>
     </header>
 
@@ -20,15 +20,15 @@
     <main class="flex flex-col sm:flex-row flex-1 overflow-hidden">
 
         <!-- Left Control Panel -->
-        <aside id="left-panel" class="w-full sm:w-1/4 md:w-1/5 lg:w-1/6 bg-white dark:bg-gray-800 p-3 sm:p-4 overflow-y-auto order-1 sm:order-none shadow-lg sm:shadow-none">
-            <h2 class="text-base sm:text-lg font-semibold mb-3 sm:mb-4 border-b pb-2 border-gray-300 dark:border-gray-700">控制面板</h2>
+        <aside id="left-panel" class="w-full sm:w-1/4 md:w-1/5 lg:w-1/6 bg-slate-800 text-slate-200 p-3 sm:p-4 overflow-y-auto order-1 sm:order-none border-r border-slate-700">
+            <h2 class="text-base sm:text-lg font-semibold mb-3 sm:mb-4 border-b pb-2 border-slate-600">控制面板</h2>
             
             <div id="controls-container" class="space-y-3 sm:space-y-4">
-                <button id="startButton" disabled class="w-full flex items-center justify-center bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 text-white font-medium py-2 px-3 rounded-md shadow-sm transition-opacity opacity-50 cursor-not-allowed">
+                <button id="startButton" disabled class="w-full flex items-center justify-center bg-cyan-600 hover:bg-cyan-500 text-white font-medium py-2 px-3 rounded-md shadow-sm transition-all duration-200 ease-in-out transform hover:scale-105 focus:scale-105 opacity-50 cursor-not-allowed border border-cyan-700 hover:border-cyan-400 focus:ring-2 focus:ring-cyan-400 focus:ring-opacity-50">
                     <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm10.586 4.586a2 2 0 112.828 2.828L18 10.828V9.172l-2.586-2.586zM16 14a2 2 0 110-4 2 2 0 010 4z"></path></svg>
                     启动摄像头
                 </button>
-                <button id="stopButton" class="w-full flex items-center justify-center bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white font-medium py-2 px-3 rounded-md shadow-sm transition-opacity">
+                <button id="stopButton" class="w-full flex items-center justify-center bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium py-2 px-3 rounded-md shadow-sm transition-all duration-200 ease-in-out transform hover:scale-105 focus:scale-105 border border-slate-600 hover:border-slate-500 focus:ring-2 focus:ring-slate-500 focus:ring-opacity-50">
                     <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 9a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clip-rule="evenodd"></path></svg>
                     停止摄像头
                 </button>
@@ -36,59 +36,59 @@
             
             <div id="file-upload-container" class="mt-4 space-y-3 sm:space-y-4">
                 <div>
-                    <label for="videoUpload" class="block mb-1 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">上传视频文件 (MP4, MOV):</label>
-                    <input type="file" id="videoUpload" accept="video/mp4,video/mov,video/webm" class="block w-full text-xs sm:text-sm text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                    <label for="videoUpload" class="block mb-1 text-xs sm:text-sm font-medium text-slate-400">上传视频文件 (MP4, MOV):</label>
+                    <input type="file" id="videoUpload" accept="video/mp4,video/mov,video/webm" class="block w-full text-xs sm:text-sm text-slate-300 border border-slate-600 rounded-md cursor-pointer bg-slate-700 focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 placeholder-slate-400 transition-colors duration-200 ease-in-out">
                 </div>
                 <div>
-                    <label for="imageUpload" class="block mb-1 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">上传图片文件 (JPG, PNG, WebP):</label>
-                    <input type="file" id="imageUpload" accept="image/jpeg,image/png,image/webp" multiple class="block w-full text-xs sm:text-sm text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                    <label for="imageUpload" class="block mb-1 text-xs sm:text-sm font-medium text-slate-400">上传图片文件 (JPG, PNG, WebP):</label>
+                    <input type="file" id="imageUpload" accept="image/jpeg,image/png,image/webp" multiple class="block w-full text-xs sm:text-sm text-slate-300 border border-slate-600 rounded-md cursor-pointer bg-slate-700 focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 placeholder-slate-400 transition-colors duration-200 ease-in-out">
                 </div>
             </div>
 
             <div id="model-selector-container" class="mt-4 sm:mt-6">
-                <h3 class="text-sm sm:text-md font-semibold mb-2 sm:mb-3 text-gray-800 dark:text-gray-200 border-t pt-3 mt-3 border-gray-300 dark:border-gray-700">选择分析模型:</h3>
+                <h3 class="text-sm sm:text-md font-semibold mb-2 sm:mb-3 text-slate-200 border-t pt-3 mt-3 border-slate-600">选择分析模型:</h3>
                 <div class="space-y-2">
-                    <button id="model-cocoSsd" data-model-name="cocoSsd" class="model-selector-btn w-full text-left p-2 sm:p-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors relative bg-blue-100 dark:bg-blue-700 ring-2 ring-blue-500 dark:ring-blue-400" aria-pressed="true">
+                    <button id="model-cocoSsd" data-model-name="cocoSsd" class="model-selector-btn w-full text-left p-2 sm:p-3 border border-slate-600 rounded-md shadow-sm hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all duration-200 ease-in-out transform hover:scale-[1.02] focus:scale-[1.02] relative bg-cyan-700 ring-2 ring-cyan-500" aria-pressed="true">
                         <div class="flex items-center justify-between">
-                            <span class="font-medium text-xs sm:text-sm text-gray-900 dark:text-white model-name-text">COCO-SSD</span>
-                            <svg id="checkmark-cocoSsd" class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400 checkmark-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                            <span class="font-medium text-xs sm:text-sm text-white model-name-text">COCO-SSD</span>
+                            <svg id="checkmark-cocoSsd" class="w-4 h-4 sm:w-5 sm:h-5 text-cyan-300 checkmark-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
                         </div>
-                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1 model-desc-text">速度与精度均衡</p>
-                        <div class="model-loading-indicator absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-80 dark:bg-gray-700 dark:bg-opacity-80 hidden rounded-lg"><svg class="animate-spin h-5 w-5 sm:h-6 sm:w-6 text-blue-500 dark:text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span class="text-xs text-blue-600 dark:text-blue-300 mt-1 loading-percentage"></span></div>
+                        <p class="text-xs text-slate-300 mt-1 model-desc-text">速度与精度均衡</p>
+                        <div class="model-loading-indicator absolute inset-0 flex flex-col items-center justify-center bg-slate-700 bg-opacity-80 hidden rounded-md"><svg class="animate-spin h-5 w-5 sm:h-6 sm:w-6 text-cyan-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span class="text-xs text-cyan-300 mt-1 loading-percentage"></span></div>
                     </button>
-                    <button id="model-mobileNetSsd" data-model-name="mobileNetSsd" class="model-selector-btn w-full text-left p-2 sm:p-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-white dark:bg-gray-800 relative" aria-pressed="false">
-                        <div class="flex items-center justify-between"><span class="font-medium text-xs sm:text-sm text-gray-900 dark:text-white model-name-text">MobileNet SSD</span><svg id="checkmark-mobileNetSsd" class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400 checkmark-icon hidden" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg></div>
-                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1 model-desc-text">轻量快速，适合移动端</p>
-                        <div class="model-loading-indicator absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-80 dark:bg-gray-700 dark:bg-opacity-80 hidden rounded-lg"><svg class="animate-spin h-5 w-5 sm:h-6 sm:w-6 text-blue-500 dark:text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span class="text-xs text-blue-600 dark:text-blue-300 mt-1 loading-percentage"></span></div>
+                    <button id="model-mobileNetSsd" data-model-name="mobileNetSsd" class="model-selector-btn w-full text-left p-2 sm:p-3 border border-slate-600 rounded-md shadow-sm hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all duration-200 ease-in-out transform hover:scale-[1.02] focus:scale-[1.02] bg-slate-800 relative" aria-pressed="false">
+                        <div class="flex items-center justify-between"><span class="font-medium text-xs sm:text-sm text-slate-200 model-name-text">MobileNet SSD</span><svg id="checkmark-mobileNetSsd" class="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400 checkmark-icon hidden" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg></div>
+                        <p class="text-xs text-slate-400 mt-1 model-desc-text">轻量快速，适合移动端</p>
+                        <div class="model-loading-indicator absolute inset-0 flex flex-col items-center justify-center bg-slate-700 bg-opacity-80 hidden rounded-md"><svg class="animate-spin h-5 w-5 sm:h-6 sm:w-6 text-cyan-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span class="text-xs text-cyan-300 mt-1 loading-percentage"></span></div>
                     </button>
-                    <button id="model-yoloV5s" data-model-name="yoloV5s" class="model-selector-btn w-full text-left p-2 sm:p-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-white dark:bg-gray-800 relative" aria-pressed="false">
-                        <div class="flex items-center justify-between"><span class="font-medium text-xs sm:text-sm text-gray-900 dark:text-white model-name-text">YOLOv5s</span><svg id="checkmark-yoloV5s" class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400 checkmark-icon hidden" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg></div>
-                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1 model-desc-text">高精度，推荐GPU环境</p>
-                        <div class="model-loading-indicator absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-80 dark:bg-gray-700 dark:bg-opacity-80 hidden rounded-lg"><svg class="animate-spin h-5 w-5 sm:h-6 sm:w-6 text-blue-500 dark:text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span class="text-xs text-blue-600 dark:text-blue-300 mt-1 loading-percentage"></span></div>
+                    <button id="model-yoloV5s" data-model-name="yoloV5s" class="model-selector-btn w-full text-left p-2 sm:p-3 border border-slate-600 rounded-md shadow-sm hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all duration-200 ease-in-out transform hover:scale-[1.02] focus:scale-[1.02] bg-slate-800 relative" aria-pressed="false">
+                        <div class="flex items-center justify-between"><span class="font-medium text-xs sm:text-sm text-slate-200 model-name-text">YOLOv5s</span><svg id="checkmark-yoloV5s" class="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400 checkmark-icon hidden" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg></div>
+                        <p class="text-xs text-slate-400 mt-1 model-desc-text">高精度，推荐GPU环境</p>
+                        <div class="model-loading-indicator absolute inset-0 flex flex-col items-center justify-center bg-slate-700 bg-opacity-80 hidden rounded-md"><svg class="animate-spin h-5 w-5 sm:h-6 sm:w-6 text-cyan-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span class="text-xs text-cyan-300 mt-1 loading-percentage"></span></div>
                     </button>
                 </div>
-                <p id="model-loading-status" class="text-xs text-gray-500 dark:text-gray-400 mt-2 h-4"></p>
+                <p id="model-loading-status" class="text-xs text-slate-400 mt-2 h-4"></p>
             </div>
 
-            <div id="confidence-threshold-container" class="mt-4 sm:mt-6 border-t pt-3 mt-3 border-gray-300 dark:border-gray-700">
-                <label for="confidenceSlider" class="block mb-1 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">置信度阈值:</label>
-                <div class="flex items-center space-x-2"><input type="range" id="confidenceSlider" min="0" max="100" value="50" class="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer"><span id="confidenceValue" class="text-xs sm:text-sm text-gray-700 dark:text-gray-300 w-10 text-right">50%</span></div>
+            <div id="confidence-threshold-container" class="mt-4 sm:mt-6 border-t pt-3 mt-3 border-slate-600">
+                <label for="confidenceSlider" class="block mb-1 text-xs sm:text-sm font-medium text-slate-300">置信度阈值:</label>
+                <div class="flex items-center space-x-2"><input type="range" id="confidenceSlider" min="0" max="100" value="50" class="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer slider-thumb-cyan"><span id="confidenceValue" class="text-xs sm:text-sm text-slate-300 w-10 text-right">50%</span></div>
             </div>
 
             <div id="iou-threshold-container" class="mt-3 sm:mt-4">
-                <label for="iouSlider" class="block mb-1 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">IoU 阈值 (NMS):</label>
-                <div class="flex items-center space-x-2"><input type="range" id="iouSlider" min="0" max="1" step="0.01" value="0.45" class="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer"><span id="iouValue" class="text-xs sm:text-sm text-gray-700 dark:text-gray-300 w-12 text-right">0.45</span></div>
+                <label for="iouSlider" class="block mb-1 text-xs sm:text-sm font-medium text-slate-300">IoU 阈值 (NMS):</label>
+                <div class="flex items-center space-x-2"><input type="range" id="iouSlider" min="0" max="1" step="0.01" value="0.45" class="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer slider-thumb-cyan"><span id="iouValue" class="text-xs sm:text-sm text-slate-300 w-12 text-right">0.45</span></div>
             </div>
         </aside>
 
         <!-- Central Video/Image Area -->
-        <section id="main-content" class="flex-1 p-2 sm:p-4 flex flex-col items-center justify-center bg-gray-200 dark:bg-gray-700 order-2 sm:order-none">
-            <div id="main-content-placeholder" class="text-center text-gray-500 dark:text-gray-400 my-auto hidden">
-                <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                <h3 class="mt-2 text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100">无活动媒体</h3>
-                <p class="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">请从左侧选择输入源或上传文件。</p>
+        <section id="main-content" class="flex-1 p-2 sm:p-4 flex flex-col items-center justify-center bg-slate-950 order-2 sm:order-none">
+            <div id="main-content-placeholder" class="text-center text-slate-500 my-auto">
+                <svg class="mx-auto h-12 w-12 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                <h3 class="mt-2 text-sm sm:text-base font-medium text-slate-300">无活动媒体</h3>
+                <p class="mt-1 text-xs sm:text-sm text-slate-400">请从左侧选择输入源或上传文件。</p>
             </div>
-            <div id="container" class="relative w-full sm:max-w-3xl aspect-video bg-black rounded-lg shadow-xl overflow-hidden">
+            <div id="container" class="relative w-full sm:max-w-3xl aspect-video bg-black rounded-md shadow-xl overflow-hidden border border-slate-700">
                 <video id="video" playsinline class="w-full h-full object-contain"></video> <!-- object-contain ensures video is not cropped -->
                 <canvas id="canvas" class="absolute top-0 left-0 w-full h-full"></canvas> <!-- ensure canvas scales with container -->
                 <img id="displayedImage" class="w-full h-full object-contain absolute top-0 left-0 hidden" alt="Uploaded Image"/>
@@ -96,12 +96,12 @@
         </section>
 
         <!-- Right Results Panel -->
-        <aside id="right-panel" class="w-full sm:w-1/4 md:w-1/5 lg:w-1/6 bg-white dark:bg-gray-800 p-3 sm:p-4 overflow-y-auto order-3 sm:order-none shadow-lg sm:shadow-none">
-            <h2 id="image-summary-header" class="text-sm sm:text-base font-semibold mb-2 border-b pb-2 border-gray-300 dark:border-gray-700">图片处理摘要:</h2>
-            <ul id="imageSummaryList" class="space-y-2 mb-3 sm:mb-4 max-h-40 sm:max-h-60 overflow-y-auto border dark:border-gray-700 p-1 sm:p-2 rounded-md"></ul>
+        <aside id="right-panel" class="w-full sm:w-1/4 md:w-1/5 lg:w-1/6 bg-slate-800 text-slate-200 p-3 sm:p-4 overflow-y-auto order-3 sm:order-none border-l border-slate-700">
+            <h2 id="image-summary-header" class="text-sm sm:text-base font-semibold mb-2 border-b pb-2 border-slate-600">图片处理摘要:</h2>
+            <ul id="imageSummaryList" class="space-y-2 mb-3 sm:mb-4 max-h-40 sm:max-h-60 overflow-y-auto border border-slate-700 p-1 sm:p-2 rounded-md bg-slate-900/30"></ul>
 
-            <h2 id="results-header" class="text-sm sm:text-base font-semibold mb-2 border-b pt-2 sm:pt-3 mt-2 sm:mt-3 border-gray-300 dark:border-gray-700">检测详情:</h2>
-            <ul id="objectList" class="space-y-1 text-xs sm:text-sm"></ul>
+            <h2 id="results-header" class="text-sm sm:text-base font-semibold mb-2 border-b pt-2 sm:pt-3 mt-2 sm:mt-3 border-slate-600">检测详情:</h2>
+            <ul id="objectList" class="space-y-1 text-xs sm:text-sm text-slate-300"></ul>
         </aside>
     </main>
 

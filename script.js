@@ -57,22 +57,22 @@ function showToast(message, type = 'info', duration = 5000) {
     let bgColor, textColor, iconSVG;
     switch (type) {
         case 'success':
-            bgColor = 'bg-green-500 dark:bg-green-600';
+            bgColor = 'bg-emerald-600 dark:bg-emerald-700'; // Updated
             textColor = 'text-white';
             iconSVG = `<svg class="w-5 h-5 mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>`;
             break;
         case 'error':
-            bgColor = 'bg-red-500 dark:bg-red-600';
+            bgColor = 'bg-red-600 dark:bg-red-700'; // Updated (darker shade)
             textColor = 'text-white';
             iconSVG = `<svg class="w-5 h-5 mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>`;
             break;
         case 'warning':
-            bgColor = 'bg-yellow-400 dark:bg-yellow-500'; 
-            textColor = 'text-gray-800 dark:text-gray-900'; 
+            bgColor = 'bg-amber-500 dark:bg-amber-600'; // Updated
+            textColor = 'text-slate-900'; // Updated for better contrast on amber with dark theme
             iconSVG = `<svg class="w-5 h-5 mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.216 3.031-1.742 3.031H4.42c-1.526 0-2.492-1.697-1.742-3.031l5.58-9.92zM10 13a1 1 0 110-2 1 1 0 010 2zm-1-3a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd"></path></svg>`;
             break;
         default: // info
-            bgColor = 'bg-blue-500 dark:bg-blue-600';
+            bgColor = 'bg-cyan-600 dark:bg-cyan-700'; // Updated to cyan
             textColor = 'text-white';
             iconSVG = `<svg class="w-5 h-5 mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>`;
             break;
@@ -111,22 +111,30 @@ function updateModelSelectorUI(selectedModelName) {
     const buttons = document.querySelectorAll('.model-selector-btn');
     buttons.forEach(button => {
         const modelName = button.dataset.modelName;
-        const checkmark = document.getElementById(`checkmark-${modelName}`); 
+        const checkmark = document.getElementById(`checkmark-${modelName}`);
         const loadingIndicator = button.querySelector('.model-loading-indicator');
 
+        // HTML already updated with tech-savvy classes like 'bg-cyan-700', 'ring-cyan-500' for selected
+        // and 'bg-slate-800' for not selected.
+        // This JS function dynamically ADDS these classes based on selection,
+        // so the class names here should match what's intended in the HTML for the *selected* state.
+        // And it REMOVES selected state classes and ADDS base state classes for *deselected*.
+
         if (modelName === selectedModelName) {
-            button.classList.add('bg-blue-100', 'dark:bg-blue-700', 'ring-2', 'ring-blue-500', 'dark:ring-blue-400');
-            button.classList.remove('bg-white', 'dark:bg-gray-800');
+            // Add classes for SELECTED state (these should match the tech-savvy selected style from index.html)
+            button.classList.add('bg-cyan-700', 'ring-2', 'ring-cyan-500'); // Tech-savvy selected
+            button.classList.remove('bg-slate-800', 'hover:bg-slate-700'); // Remove base/hover state for tech-savvy
             button.setAttribute('aria-pressed', 'true');
             if (checkmark) checkmark.classList.remove('hidden');
-            if (loadingIndicator && !activeModel.isLoading) loadingIndicator.classList.add('hidden'); // Hide spinner if selected and not loading
+            if (loadingIndicator && !activeModel.isLoading) loadingIndicator.classList.add('hidden');
 
         } else {
-            button.classList.remove('bg-blue-100', 'dark:bg-blue-700', 'ring-2', 'ring-blue-500', 'dark:ring-blue-400');
-            button.classList.add('bg-white', 'dark:bg-gray-800');
+            // Add classes for DESELECTED/BASE state (these should match tech-savvy base style from index.html)
+            button.classList.remove('bg-cyan-700', 'ring-2', 'ring-cyan-500'); // Remove tech-savvy selected
+            button.classList.add('bg-slate-800', 'hover:bg-slate-700');    // Add base state for tech-savvy
             button.setAttribute('aria-pressed', 'false');
             if (checkmark) checkmark.classList.add('hidden');
-            if (loadingIndicator) loadingIndicator.classList.add('hidden'); // Always hide spinner if not selected
+            if (loadingIndicator) loadingIndicator.classList.add('hidden'); 
         }
     });
 }
@@ -302,12 +310,12 @@ function clearAllMediaAndResults() {
     context.clearRect(0, 0, canvas.width, canvas.height);
     canvas.style.display = 'none'; 
 
-    objectList.innerHTML = '<li class="text-gray-500 dark:text-gray-400">请选择媒体并开始分析。</li>';
+    objectList.innerHTML = '<li class="text-slate-500">请选择媒体并开始分析。</li>'; // Updated class
 
     batchImageResults = []; 
     const summaryListElement = document.getElementById('imageSummaryList');
     if (summaryListElement) {
-        summaryListElement.innerHTML = '<li class="text-gray-500 dark:text-gray-400">上传图片以查看摘要。</li>';
+        summaryListElement.innerHTML = '<li class="text-slate-500">上传图片以查看摘要。</li>'; // Updated class
     }
 
     const loadingStatusEl = document.getElementById('model-loading-status');
@@ -390,18 +398,25 @@ function drawResults(predictions) {
         if (prediction.score > currentConfidenceThreshold) { 
             const [x, y, width, height] = prediction.bbox;
 
-            context.strokeStyle = 'red';
+            context.strokeStyle = '#0891b2'; // Cyan-600 for bounding box
             context.lineWidth = 2;
             context.strokeRect(x, y, width, height);
 
-            context.fillStyle = 'red';
+            context.fillStyle = '#0891b2'; // Cyan-600 for text background (or just text color)
             context.font = '16px Arial';
             const label = `${prediction.class} (${Math.round(prediction.score * 100)}%)`;
-            context.fillText(label, x, y > 10 ? y - 5 : 10);
+            
+            // For better text visibility with dark boxes, consider a small background for the text
+            const textWidth = context.measureText(label).width;
+            context.fillStyle = 'rgba(15, 23, 42, 0.7)'; // slate-900 with opacity
+            context.fillRect(x, y > 20 ? y - 20 : y, textWidth + 4, 20);
+            context.fillStyle = '#e2e8f0'; // slate-200 for text
+            context.fillText(label, x + 2, y > 20 ? y - 5 : y + 15);
+
 
             const listItem = document.createElement('li');
-            listItem.className = "text-gray-800 dark:text-gray-200";
-            listItem.textContent = label;
+            // Class already updated in index.html to text-slate-300, JS just sets textContent
+            listItem.textContent = label; 
             objectList.appendChild(listItem);
         }
     });
@@ -458,7 +473,7 @@ stopButton.addEventListener('click', () => {
     displayedImageElement.src = '';
     context.clearRect(0, 0, canvas.width, canvas.height);
     canvas.style.display = 'none';
-    objectList.innerHTML = '<li class="text-gray-500 dark:text-gray-400">媒体已停止。</li>';
+    objectList.innerHTML = '<li class="text-slate-500">媒体已停止。</li>'; // Updated class
     document.getElementById('main-content-placeholder').classList.remove('hidden');
     document.getElementById('container').style.display = 'none';
     currentMainMediaPredictions = [];
@@ -582,7 +597,7 @@ async function handleImageUpload(event) {
         document.getElementById('main-content-placeholder').classList.remove('hidden');
         document.getElementById('container').style.display = 'none';
         canvas.style.display = 'none';
-        objectList.innerHTML = '<li class="text-gray-500 dark:text-gray-400">未处理任何图片或处理失败。</li>'; 
+        objectList.innerHTML = '<li class="text-slate-500">未处理任何图片或处理失败。</li>';  // Updated class
     }
 }
 
@@ -749,14 +764,16 @@ function displayImageSummaries() {
     summaryListElement.innerHTML = ''; 
 
     if (batchImageResults.length === 0) {
-        summaryListElement.innerHTML = '<li class="text-gray-500 dark:text-gray-400">没有处理的图片。</li>';
+        summaryListElement.innerHTML = '<li class="text-slate-500">没有处理的图片。</li>'; // Updated class
         return;
     }
 
     batchImageResults.forEach((result, index) => {
         const listItem = document.createElement('li');
-        listItem.className = 'p-2 border dark:border-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer flex items-center space-x-2';
-        listItem.dataset.imageId = result.id; 
+        // Base classes are set in index.html (bg-slate-800, border-slate-700, hover:bg-slate-700 etc.)
+        // JS will toggle selection classes. Added transition classes here.
+        listItem.className = 'p-2 border border-slate-700 rounded-md hover:bg-slate-700 cursor-pointer flex items-center space-x-2 transition-all duration-150 ease-in-out transform hover:scale-[1.03]';
+        listItem.dataset.imageId = result.id;
 
         const thumbnail = document.createElement('img');
         thumbnail.src = result.dataURL;
@@ -766,11 +783,11 @@ function displayImageSummaries() {
         infoDiv.className = 'flex-1 min-w-0'; // Added min-w-0 for better truncation
 
         const fileNameP = document.createElement('p');
-        fileNameP.className = 'text-xs sm:text-sm font-medium truncate';
+        fileNameP.className = 'text-xs sm:text-sm font-medium truncate text-slate-200'; // Updated class
         fileNameP.textContent = result.fileName;
 
         const detectionSummaryP = document.createElement('p');
-        detectionSummaryP.className = 'text-xs text-gray-600 dark:text-gray-400';
+        detectionSummaryP.className = 'text-xs text-slate-400'; // Updated class
         if (result.predictions && result.predictions.length > 0) {
             const objectTypes = new Set(result.predictions.map(p => p.class));
             detectionSummaryP.textContent = `检测到 ${result.predictions.length} 个物体 (${Array.from(objectTypes).slice(0,2).join(', ')}${objectTypes.size > 2 ? '...' : ''})`;
@@ -850,7 +867,7 @@ async function postprocessOutputYoloV5s(
     console.log(`YOLOv5 Postprocessing: ${allFilteredBoxes.length} boxes passed initial confidence before per-class NMS.`);
 
     const finalPredictions = [];
-    for (let c = 0; c < numClasses; c++) {
+    for (let c = 0; c < numClasses; c++) { 
         const classSpecificBoxes = allFilteredBoxes.filter(b => b.classIndex === c);
         if (classSpecificBoxes.length === 0) {
             continue;
@@ -949,9 +966,13 @@ function handleSummaryItemClick(imageId) {
     const summaryListItems = document.querySelectorAll('#imageSummaryList li');
     summaryListItems.forEach(item => {
         if (item.dataset.imageId === imageId) {
-            item.classList.add('bg-blue-200', 'dark:bg-blue-600', 'ring-2', 'ring-blue-500'); 
+            // Classes for SELECTED state (match tech-savvy selected style from index.html)
+            item.classList.add('bg-cyan-600', 'ring-2', 'ring-cyan-400');
+            item.classList.remove('border-slate-700', 'hover:bg-slate-700'); // Remove base state classes
         } else {
-            item.classList.remove('bg-blue-200', 'dark:bg-blue-600', 'ring-2', 'ring-blue-500');
+            // Classes for DESELECTED/BASE state (match tech-savvy base style from index.html)
+            item.classList.remove('bg-cyan-600', 'ring-2', 'ring-cyan-400');
+            item.classList.add('border-slate-700', 'hover:bg-slate-700'); // Add base state classes
         }
     });
 }
