@@ -93,6 +93,22 @@
                 </div>
                 <p id="model-loading-status" class="text-xs text-gray-500 mt-2 h-4"></p> <!-- For loading status messages -->
             </div>
+
+            <!-- Confidence Threshold Slider -->
+            <div id="confidence-threshold-container" class="mt-6">
+                <label for="confidenceSlider" class="block mb-1 text-sm font-medium text-gray-800">置信度阈值:</label>
+                <div class="flex items-center space-x-2">
+                    <input 
+                        type="range" 
+                        id="confidenceSlider" 
+                        min="0" 
+                        max="100" 
+                        value="50" 
+                        class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                    >
+                    <span id="confidenceValue" class="text-sm text-gray-700 w-10 text-right">50%</span>
+                </div>
+            </div>
         </aside>
 
         <!-- Central Video/Image Area -->

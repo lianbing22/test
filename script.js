@@ -29,6 +29,12 @@ let activeModel = {
 };
 let isDetecting = false;
 let batchImageResults = []; // Added for batch results
+let currentConfidenceThreshold = 0.5; // Default to 50%
+let currentMainMediaPredictions = []; // For re-drawing static images with new threshold
+
+// Element references
+let confidenceSlider;
+let confidenceValueDisplay;
 
 // Function to load the COCO-SSD model (Replaced by initializeDefaultModel and loadSelectedModel)
 // async function loadModel() { ... }
@@ -186,6 +192,7 @@ function clearAllMediaAndResults() {
             loadingStatusEl.textContent = `${activeModel.name || '模型'} 加载失败。请重试。`;
         }
     }
+    currentMainMediaPredictions = []; // Clear stored predictions for main media
 }
 
 async function detectObjects() {
@@ -233,7 +240,7 @@ function drawResults(predictions) {
     objectList.innerHTML = ''; // Clear previous list items
 
     predictions.forEach(prediction => {
-        if (prediction.score > 0.5) { // Optional: Confidence threshold
+        if (prediction.score > currentConfidenceThreshold) { // Use global threshold
             const [x, y, width, height] = prediction.bbox;
 
             // Draw bounding box
@@ -637,7 +644,8 @@ function handleSummaryItemClick(imageId) {
 
         // 4. Draw detection results for this image
         //    The predictions are already stored in selectedResult.predictions
-        drawResults(selectedResult.predictions || []); // Pass the stored predictions
+        currentMainMediaPredictions = selectedResult.predictions || []; // STORE HERE
+        drawResults(currentMainMediaPredictions); // Initial draw with current (possibly old) threshold
 
         // 5. Update the main #objectList with details for THIS image
         //    drawResults already clears and populates objectList based on the predictions it receives.
