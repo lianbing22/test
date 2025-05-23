@@ -1,27 +1,55 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Video Analysis</title>
+    <title>AI 视频分析</title>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.3/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <h1>AI Object Recognition</h1>
-    <div id="container">
-        <video id="video" autoplay playsinline></video>
-        <canvas id="canvas"></canvas>
-    </div>
-    <div id="controls">
-        <button id="startButton" disabled>Start Camera</button>
-        <button id="stopButton">Stop Camera</button>
-    </div>
-    <div id="results">
-        <h2>Detected Objects:</h2>
-        <ul id="objectList"></ul>
-    </div>
+<body class="flex flex-col h-screen font-sans"> <!-- Tailwind: full height, column flex, sans-serif font -->
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-blue-600 text-white p-4 shadow-md"> <!-- Tailwind: blue background, white text, padding, shadow -->
+        <h1 class="text-xl">AI 视频/图像分析平台</h1> <!-- Tailwind: large text -->
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex flex-1 overflow-hidden"> <!-- Tailwind: flex grow, hide overflow -->
+
+        <!-- Left Control Panel -->
+        <aside id="left-panel" class="w-1/4 bg-gray-100 p-4 overflow-y-auto"> <!-- Tailwind: 1/4 width, light gray bg, padding, vertical scroll -->
+            <h2 class="text-lg font-semibold mb-4">控制面板</h2>
+            <div id="controls-container">
+                <!-- Existing buttons will be moved here later -->
+                <button id="startButton" disabled class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mb-2 w-full">启动摄像头</button>
+                <button id="stopButton" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded w-full">停止摄像头</button>
+            </div>
+            <!-- Placeholder for future controls like file input -->
+            <div id="file-upload-container" class="mt-4">
+                <label for="videoUpload" class="block mb-2 text-sm font-medium text-gray-900">上传视频文件 (MP4, MOV):</label>
+                <input type="file" id="videoUpload" accept="video/mp4,video/mov,video/webm" class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none">
+            </div>
+        </aside>
+
+        <!-- Central Video/Image Area -->
+        <section id="main-content" class="flex-1 p-4 flex flex-col items-center justify-center bg-gray-200"> <!-- Tailwind: flex grow, padding, center content, medium gray bg -->
+            <div id="container" class="relative w-full max-w-3xl aspect-video bg-black"> <!-- Tailwind: relative, full width, max width, aspect ratio for video, black bg -->
+                <video id="video" autoplay playsinline class="w-full h-full"></video> <!-- Tailwind: full width and height -->
+                <canvas id="canvas" class="absolute top-0 left-0"></canvas> <!-- Tailwind: absolute positioning -->
+            </div>
+        </section>
+
+        <!-- Right Results Panel -->
+        <aside id="right-panel" class="w-1/4 bg-gray-100 p-4 overflow-y-auto"> <!-- Tailwind: 1/4 width, light gray bg, padding, vertical scroll -->
+            <h2 id="results-header" class="text-lg font-semibold mb-4">检测到的物体:</h2>
+            <ul id="objectList" class="space-y-2"></ul> <!-- Tailwind: spacing between list items -->
+        </aside>
+
+    </main>
+
     <script src="script.js"></script>
 </body>
 </html>

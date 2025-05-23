@@ -1,90 +1,35 @@
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 20px;
-    background-color: #f4f4f4;
-    color: #333;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
+/* style.css */
+/* Keep this file minimal. Most styling should be done with Tailwind classes in HTML. */
 
-h1 {
-    color: #333;
-}
+/* Canvas is positioned by Tailwind; dimensions by JS. No specific CSS needed here usually. */
+/* #canvas {} */
 
-#container {
-    position: relative;
-    width: 100%;
-    max-width: 640px; /* Adjust as needed */
-    margin: 20px auto;
-    border: 1px solid #ccc;
-    box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
-}
-
-#video {
-    display: block;
-    width: 100%;
-    height: auto;
-}
-
-#canvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    /* Dimensions set by JS */
-}
-
-#controls {
-    margin-top: 15px;
-    text-align: center;
-}
-
-#controls button {
-    padding: 10px 15px;
-    margin: 5px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-}
-
-#controls button:disabled {
-    background-color: #cccccc;
+/* Tailwind's default disabled:opacity-50 and specific background colors (e.g., bg-green-300) should be preferred.
+   If very specific non-Tailwind colors are needed, they can stay.
+   The example #startButton:disabled is now handled by Tailwind in index.html for the green button.
+   The #stopButton doesn't have a specific disabled style here, Tailwind would apply default.
+*/
+/*
+#startButton:disabled {
+    background-color: #90cdf4;
     cursor: not-allowed;
 }
+*/
 
-#controls button:hover:not(:disabled) {
-    background-color: #0056b3;
-}
-
-#results {
-    margin-top: 20px;
-    padding: 15px;
-    background-color: #fff;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    width: 100%;
-    max-width: 640px; /* Match container */
-}
-
-#results h2 {
-    margin-top: 0;
-    color: #333;
-}
-
-#objectList {
-    list-style-type: none;
-    padding: 0;
-}
-
+/* Specific list item styling if Tailwind's space-y or divide-y is not sufficient.
+   The current index.html uses space-y-2 on #objectList.
+   The example styles for #objectList li are now mostly covered by Tailwind.
+*/
 #objectList li {
-    padding: 5px 0;
-    border-bottom: 1px solid #eee;
+    /* Example: if you had a very specific border or background for list items beyond Tailwind */
+    /* border-bottom: 1px dashed #ccc; */ /* Tailwind 'divide-y divide-dashed' could do this */
+    padding: 4px; /* Tailwind 'p-1' is similar */
+    /* background-color: #f9f9f9; */ /* Tailwind 'bg-gray-50' is similar */
+    /* Retaining a slightly different background for demonstration if needed, but prefer Tailwind */
 }
 
-#objectList li:last-child {
-    border-bottom: none;
-}
+/* Remove body, h1, #container, #video, #controls, #results styles as they are handled by Tailwind */
+/* For example, body styling is now on the <body> tag: class="flex flex-col h-screen font-sans" */
+/* h1 is styled with text-xl in the header */
+/* #container has relative w-full max-w-3xl aspect-video bg-black */
+/* etc. */
