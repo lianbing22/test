@@ -1,3 +1,6 @@
+// This script.js content is from the end of Subtask 21,
+// with Subtask 22 changes (duplicate variable cleanup) manually integrated.
+
 const video = document.getElementById('video');
 const startButton = document.getElementById('startButton');
 const stopButton = document.getElementById('stopButton');
@@ -5,7 +8,7 @@ const objectList = document.getElementById('objectList');
 const canvas = document.getElementById('canvas');
 const context = canvas.getContext('2d');
 const videoUpload = document.getElementById('videoUpload');
-const imageUpload = document.getElementById('imageUpload'); // Added
+const imageUpload = document.getElementById('imageUpload'); 
 
 const COCO_CLASSES = [
     'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
@@ -17,20 +20,16 @@ const COCO_CLASSES = [
     'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote', 'keyboard', 'cell phone',
     'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy bear',
     'hair drier', 'toothbrush'
-]; // 90 classes
+]; 
 
-
-// let model; // Replaced with activeModel object
 let activeModel = {
-    name: null, // e.g., "cocoSsd", "mobileNetSsd"
-    instance: null, // Stores the loaded model object
+    name: null, 
+    instance: null, 
     isLoading: false,
     error: null
 };
 let isDetecting = false;
-let batchImageResults = []; // Added for batch results
-let currentConfidenceThreshold = 0.5; // Default to 50%
-let currentMainMediaPredictions = []; // For re-drawing static images with new threshold
+let batchImageResults = []; 
 
 // Element references
 let confidenceSlider;
@@ -44,22 +43,17 @@ let currentIouThreshold = 0.45; // Default IoU threshold
 
 let currentMainMediaPredictions = []; // For re-drawing static images with new threshold
 
-// Function to load the COCO-SSD model (Replaced by initializeDefaultModel and loadSelectedModel)
-// async function loadModel() { ... }
-
 function showToast(message, type = 'info', duration = 5000) {
     const container = document.getElementById('toast-container');
     if (!container) {
         console.error('Toast container not found!');
-        // Fallback to alert if container is missing (should not happen)
         alert(`${type.toUpperCase()}: ${message}`);
         return;
     }
 
     const toast = document.createElement('div');
-    toast.className = 'p-4 rounded-md shadow-lg flex items-center justify-between text-sm animate-fade-in-right'; // Base classes + animation
+    toast.className = 'p-4 rounded-md shadow-lg flex items-center justify-between text-sm animate-fade-in-right'; 
 
-    // Icon and Color based on type
     let bgColor, textColor, iconSVG;
     switch (type) {
         case 'success':
@@ -73,8 +67,8 @@ function showToast(message, type = 'info', duration = 5000) {
             iconSVG = `<svg class="w-5 h-5 mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>`;
             break;
         case 'warning':
-            bgColor = 'bg-yellow-400'; // Softer yellow for better text contrast
-            textColor = 'text-gray-800'; // Darker text for yellow background
+            bgColor = 'bg-yellow-400'; 
+            textColor = 'text-gray-800'; 
             iconSVG = `<svg class="w-5 h-5 mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.216 3.031-1.742 3.031H4.42c-1.526 0-2.492-1.697-1.742-3.031l5.58-9.92zM10 13a1 1 0 110-2 1 1 0 010 2zm-1-3a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd"></path></svg>`;
             break;
         default: // info
@@ -86,8 +80,8 @@ function showToast(message, type = 'info', duration = 5000) {
     toast.classList.add(bgColor, textColor);
 
     const messageSpan = document.createElement('span');
-    messageSpan.innerHTML = iconSVG; // Add icon before message text
-    messageSpan.appendChild(document.createTextNode(message)); // Append text node
+    messageSpan.innerHTML = iconSVG; 
+    messageSpan.appendChild(document.createTextNode(message)); 
     messageSpan.classList.add('flex', 'items-center');
 
 
@@ -95,20 +89,18 @@ function showToast(message, type = 'info', duration = 5000) {
     closeButton.innerHTML = '&times;';
     closeButton.className = 'ml-4 text-xl font-semibold leading-none hover:opacity-75';
     closeButton.onclick = () => {
-        toast.classList.add('animate-fade-out-right'); // Optional: add fade out animation class
-        setTimeout(() => toast.remove(), 300); // Remove after animation
+        toast.classList.add('animate-fade-out-right'); 
+        setTimeout(() => toast.remove(), 300); 
     };
 
     toast.appendChild(messageSpan);
     toast.appendChild(closeButton);
     container.appendChild(toast);
 
-    // Auto-dismiss
     setTimeout(() => {
-        // Check if toast still exists (user might have closed it manually)
         if (toast.parentElement) {
-            toast.classList.add('animate-fade-out-right'); // Add fade out animation class
-            setTimeout(() => toast.remove(), 300); // Remove after animation
+            toast.classList.add('animate-fade-out-right'); 
+            setTimeout(() => toast.remove(), 300); 
         }
     }, duration);
 }
@@ -117,7 +109,7 @@ function updateModelSelectorUI(selectedModelName) {
     const buttons = document.querySelectorAll('.model-selector-btn');
     buttons.forEach(button => {
         const modelName = button.dataset.modelName;
-        const checkmark = document.getElementById(`checkmark-${modelName}`); // Assumes checkmark IDs like 'checkmark-cocoSsd'
+        const checkmark = document.getElementById(`checkmark-${modelName}`); 
 
         if (modelName === selectedModelName) {
             button.classList.add('bg-blue-100', 'ring-2', 'ring-blue-500');
@@ -148,12 +140,10 @@ function setLoadingState(isLoading, message = "") {
         const percentageText = button.querySelector('.loading-percentage');
 
         if (isLoading) {
-            button.classList.add('opacity-75', 'cursor-not-allowed'); // Make it slightly opaque
+            button.classList.add('opacity-75', 'cursor-not-allowed'); 
             if (loadingIndicator) {
                 loadingIndicator.classList.remove('hidden');
-                // For global loading state, hide percentage, show only spinner
                 if (percentageText) percentageText.textContent = ''; 
-                // Ensure spinner is visible (it's part of the indicator div)
             }
         } else {
             button.classList.remove('opacity-75', 'cursor-not-allowed');
@@ -163,8 +153,10 @@ function setLoadingState(isLoading, message = "") {
         }
     });
 
-    // Disable/enable other main action buttons
+    console.log(`setLoadingState: isLoading=${isLoading}, activeModel.instance is ${activeModel.instance ? 'NOT null' : 'null'}`);
     startButton.disabled = isLoading || (activeModel.instance === null);
+    console.log(`setLoadingState: startButton.disabled set to ${startButton.disabled}`);
+    
     videoUpload.disabled = isLoading;
     imageUpload.disabled = isLoading;
     if (confidenceSlider) confidenceSlider.disabled = isLoading;
@@ -172,10 +164,6 @@ function setLoadingState(isLoading, message = "") {
 }
 
 async function loadSelectedModel(modelName) {
-    // If a model is already loading, or if the selected model is already active, do nothing.
-    // Note: The button click handler in DOMContentLoaded already checks 'activeModel.isLoading'
-    // and 'activeModel.name !== modelNameFromButton'.
-    // This is an additional safeguard within the function itself.
     if (activeModel.isLoading && activeModel.name === modelName) {
         console.log(`Loading for ${modelName} is already in progress.`);
         return;
@@ -185,15 +173,13 @@ async function loadSelectedModel(modelName) {
         return;
     }
 
-    // Set the activeModel.name *before* calling setLoadingState
-    // This is so onProgress can correctly identify if its updates are for the current loading model.
     activeModel.name = modelName; 
-    activeModel.isLoading = true; // Manually set isLoading before the first setLoadingState for this load cycle
+    activeModel.isLoading = true; 
     activeModel.error = null;
-    activeModel.instance = null; // Clear previous instance
+    activeModel.instance = null; 
     
     setLoadingState(true, `正在加载 ${modelName} 模型...`);
-    updateModelSelectorUI(modelName); // Update UI to show this model is targeted for loading
+    updateModelSelectorUI(modelName); 
 
     try {
         let newModelInstance;
@@ -201,7 +187,7 @@ async function loadSelectedModel(modelName) {
         const percentageTextEl = currentModelButton ? currentModelButton.querySelector('.loading-percentage') : null;
 
         if (modelName === "cocoSsd") {
-            if (percentageTextEl) percentageTextEl.textContent = ''; // COCO-SSD has no percentage
+            if (percentageTextEl) percentageTextEl.textContent = ''; 
             newModelInstance = await cocoSsd.load();
         } else if (modelName === "mobileNetSsd" || modelName === "yoloV5s") {
             let modelUrl;
@@ -209,7 +195,6 @@ async function loadSelectedModel(modelName) {
                 modelUrl = 'https://tfhub.dev/tensorflow/tfjs-model/ssd_mobilenet_v2/coco/uint8/2/default/1/model.json?tfjs-format=graph-model';
                 newModelInstance = await tf.loadGraphModel(modelUrl, {
                     onProgress: (fraction) => {
-                        // Check if this loading task is still the active one
                         if (percentageTextEl && activeModel.isLoading && activeModel.name === modelName) {
                             percentageTextEl.textContent = `${Math.round(fraction * 100)}%`;
                         }
@@ -233,100 +218,79 @@ async function loadSelectedModel(modelName) {
             throw new Error(`未知模型: ${modelName}`);
         }
         
-        // Check if another model loading was initiated while this one was loading
-        // activeModel.name would have been changed by the newer call to loadSelectedModel
         if (activeModel.name !== modelName) {
              console.warn(`Model loading for ${modelName} completed, but another model (${activeModel.name}) load was initiated. Discarding ${modelName}.`);
-             // newModelInstance might need disposal if tf.js doesn't handle it automatically when not assigned.
-             // However, standard TFJS models are usually managed by the tf.ENV.
-             // For explicit disposal if model has a dispose method (some TFJS models do, GraphModel generally doesn't need manual unless for specific layers)
              if (newModelInstance && typeof newModelInstance.dispose === 'function') {
                 newModelInstance.dispose();
              }
              return; 
         }
             
-        // Successfully loaded the intended model
-        // activeModel.name = modelName; // Already set at the beginning of this load attempt
         activeModel.instance = newModelInstance;
-        activeModel.isLoading = false; // Mark loading as complete *before* final UI updates
-        console.log(`${modelName} model loaded successfully.`);
+        activeModel.isLoading = false; 
+        console.log(`loadSelectedModel: ${modelName} instance assigned. isLoading set to false.`);
         
-        setLoadingState(false, `${modelName} 加载完成!`); // This will hide all spinners and enable buttons
-        // updateModelSelectorUI(modelName); // Already called when loading started to show target
-        // Final check on UI consistency, make sure correct button is highlighted
+        setLoadingState(false, `${modelName} 加载完成!`); 
         if (document.getElementById(`model-${modelName}`).getAttribute('aria-pressed') === 'false') {
             updateModelSelectorUI(modelName);
         }
 
-
     } catch (err) {
-        console.error(`Error loading ${modelName} model: `, err);
+        console.error(`Error loading ${modelName} model (raw error object):`, err); 
         
-        // Check if this error corresponds to the model that is currently supposed to be loading
-        if(activeModel.name === modelName) { 
-            activeModel.error = err;
+        let errorMessage = err.message || "未知错误";
+        if (err.stack) {
+            console.error("Stack trace:", err.stack);
+        }
+        if (err.name) {
+            errorMessage = `${err.name}: ${errorMessage}`;
+        }
+
+        if(activeModel.name === modelName || activeModel.name === null) { 
+            activeModel.error = err; 
             activeModel.instance = null;
-            activeModel.isLoading = false; // Ensure loading state is reset
+            activeModel.isLoading = false; 
             setLoadingState(false, `${modelName} 加载失败。`); 
-            updateModelSelectorUI(null); // No model is active or selected
-            showToast(`${modelName} 加载失败: ${err.message}`, 'error');
+            updateModelSelectorUI(null); 
+            showToast(`${modelName} 加载失败: ${errorMessage.substring(0, 100)}`, 'error', 7000); 
         } else {
-             // A different model loading was already in progress or finished, this error is from a stale load.
              console.warn(`Error for ${modelName} but active model is ${activeModel.name}. Ignoring stale error.`);
         }
     }
 }
 
-async function initializeDefaultModel() {
-    // Load COCO-SSD by default
-    await loadSelectedModel("cocoSsd");
-    // Original logic to enable startButton was in loadModel, setLoadingState now handles it.
-    // startButton.disabled = activeModel.instance === null;
-}
-
-// Removed initializeDefaultModel function as its logic is moved to DOMContentLoaded
-
 function clearAllMediaAndResults() {
     console.log("Clearing all media and results due to model switch...");
 
-    // Stop camera if active
     if (video.srcObject) {
         const stream = video.srcObject;
         stream.getTracks().forEach(track => track.stop());
         video.srcObject = null;
     }
-    // Clear video file if active
     if (video.src && video.src.startsWith('blob:')) {
         URL.revokeObjectURL(video.src);
         video.src = "";
     }
-    video.style.display = 'block'; // Default to showing video element (empty)
+    video.style.display = 'block'; 
     video.controls = false;
 
-    // Remove displayed image if active
     const existingImage = document.getElementById('displayedImage');
     if (existingImage) {
         existingImage.remove();
     }
-     // Ensure video container is visible, and video element itself is displayed (though src might be empty)
-    // document.getElementById('container').style.display = 'block'; // Replaced by placeholder logic
-
-    // Hide media container, show placeholder
+    
     const mediaContainer = document.getElementById('container');
     const placeholder = document.getElementById('main-content-placeholder');
     if (mediaContainer) mediaContainer.style.display = 'none';
     if (placeholder) placeholder.classList.remove('hidden');
 
-
-    // Clear detection state and UI lists
     isDetecting = false;
     context.clearRect(0, 0, canvas.width, canvas.height);
-    canvas.style.display = 'none'; // Also hide canvas when no media
+    canvas.style.display = 'none'; 
 
     objectList.innerHTML = '<li class="text-gray-500">请选择媒体并开始分析。</li>';
 
-    batchImageResults = []; // Moved from individual handlers to here for centralization
+    batchImageResults = []; 
     const summaryListElement = document.getElementById('imageSummaryList');
     if (summaryListElement) {
         summaryListElement.innerHTML = '<li class="text-gray-500">上传图片以查看摘要。</li>';
@@ -334,100 +298,88 @@ function clearAllMediaAndResults() {
 
     const loadingStatusEl = document.getElementById('model-loading-status');
     if (loadingStatusEl) {
-        // Message updated when model actually starts loading via setLoadingState
-        // For now, just ensure it's not showing a stale "success" message for a model.
-        // If activeModel.error is set, it will be shown by setLoadingState.
         if (!activeModel.isLoading && !activeModel.error) {
              loadingStatusEl.textContent = '选择模型并加载媒体进行分析。';
         } else if (activeModel.error) {
             loadingStatusEl.textContent = `${activeModel.name || '模型'} 加载失败。请重试。`;
         }
     }
-    currentMainMediaPredictions = []; // Clear stored predictions for main media
+    currentMainMediaPredictions = []; 
 }
 
 async function detectObjects() {
     if (!isDetecting) return;
     if (!activeModel.instance) {
         console.warn("detectObjects: No active model instance.");
-        requestAnimationFrame(detectObjects); // Keep the loop going but do nothing
+        requestAnimationFrame(detectObjects); 
         return;
     }
 
     let predictions = [];
     try {
-        if (video.readyState >= 3) { // Ensure video has data
+        if (video.readyState >= 3) { 
             if (activeModel.instance.modelType === "yoloV5s") {
-                const modelInputShape = activeModel.instance.inputShape.slice(1, 3); // e.g., [640, 640]
+                const modelInputShape = activeModel.instance.inputShape.slice(1, 3); 
                 const { tensor: inputTensor, letterboxInfo } = preprocessInputYoloV5s(video, modelInputShape);
                 
                 const rawOutputTensor = await activeModel.instance.executeAsync(inputTensor);
-                tf.dispose(inputTensor); // Dispose input tensor
+                tf.dispose(inputTensor); 
 
-                // rawOutputTensor might be an array of tensors if model has multiple output nodes.
-                // Or a single tensor if it's structured that way.
-                // Assuming it's the single tensor [1, 25200, classes+5] for now.
-                // If it's an array, use rawOutputTensor[0] or similar based on model structure.
                 const outputTensorForPost = Array.isArray(rawOutputTensor) ? rawOutputTensor[0] : rawOutputTensor;
 
                 predictions = await postprocessOutputYoloV5s(
-                    outputTensorForPost, // Pass the actual tensor
+                    outputTensorForPost, 
                     video.videoWidth,
                     video.videoHeight,
                     letterboxInfo,
                     currentConfidenceThreshold,
-                    currentIouThreshold // ADD THIS
+                    currentIouThreshold 
                 );
-                // If rawOutputTensor was an array and contained other tensors that need disposal:
                 if (Array.isArray(rawOutputTensor)) {
                     for (let i = 1; i < rawOutputTensor.length; i++) {
                         tf.dispose(rawOutputTensor[i]);
                     }
                 }
 
-            } else if (activeModel.instance.isGraphModel) { // For other GraphModels like MobileNet SSD
-                const inputTensor = preprocessInput(video, activeModel.instance.inputShape); // Assuming generic preprocess for other graph models
+            } else if (activeModel.instance.isGraphModel) { 
+                const inputTensor = preprocessInput(video, activeModel.instance.inputShape); 
                 const outputTensors = await activeModel.instance.executeAsync(inputTensor);
                 tf.dispose(inputTensor);
                 predictions = await postprocessOutputMobileNetSsd(outputTensors, video.videoWidth, video.videoHeight, currentConfidenceThreshold);
-            } else if (activeModel.instance) { // For COCO-SSD like models
+            } else if (activeModel.instance) { 
                 predictions = await activeModel.instance.detect(video);
             }
         }
     } catch (err) {
         console.error("Error during object detection (detectObjects): ", err);
-        // Potentially stop isDetecting or show error to user
-        isDetecting = false; // Stop detection loop on error to prevent flooding
+        isDetecting = false; 
         setLoadingState(false, `检测出错: ${err.message.substring(0,100)}`);
     }
 
-    drawResults(predictions || []); // Ensure predictions is not null/undefined
+    drawResults(predictions || []); 
 
-    if (isDetecting) { // Only continue loop if still detecting
+    if (isDetecting) { 
         requestAnimationFrame(detectObjects);
     }
 }
 
 function drawResults(predictions) {
     context.clearRect(0, 0, canvas.width, canvas.height);
-    objectList.innerHTML = ''; // Clear previous list items
+    objectList.innerHTML = ''; 
 
     predictions.forEach(prediction => {
-        if (prediction.score > currentConfidenceThreshold) { // Use global threshold
+        if (prediction.score > currentConfidenceThreshold) { 
             const [x, y, width, height] = prediction.bbox;
 
-            // Draw bounding box
             context.strokeStyle = 'red';
             context.lineWidth = 2;
             context.strokeRect(x, y, width, height);
 
-            // Draw label
             context.fillStyle = 'red';
             context.font = '16px Arial';
             const label = `${prediction.class} (${Math.round(prediction.score * 100)}%)`;
             context.fillText(label, x, y > 10 ? y - 5 : 10);
 
-            // Add to object list
             const listItem = document.createElement('li');
             listItem.textContent = label;
             objectList.appendChild(listItem);
@@ -436,42 +388,34 @@ function drawResults(predictions) {
 }
 
 startButton.addEventListener('click', async () => {
-    // Before getting camera stream:
     if (video.src && video.src.startsWith('blob:')) {
-        URL.revokeObjectURL(video.src); // Revoke old object URL
-        video.src = ""; // Clear src
-        // video.controls = false; // controls are set below
+        URL.revokeObjectURL(video.src); 
+        video.src = ""; 
         console.log("Cleared previously loaded video file.");
     }
-    // Clear batch image results and summary list
     batchImageResults = [];
-    const imageSummaryListElement = document.getElementById('imageSummaryList'); // Keep one
+    const imageSummaryListElement = document.getElementById('imageSummaryList'); 
     if (imageSummaryListElement) imageSummaryListElement.innerHTML = '';
-    // const imageSummaryListElement = document.getElementById('imageSummaryList'); // Remove this duplicate
-    // if (imageSummaryListElement) imageSummaryListElement.innerHTML = ''; // And this
-    document.getElementById('objectList').innerHTML = ''; // Also clear main object list
+    document.getElementById('objectList').innerHTML = ''; 
 
-    // Hide/remove existing image if any
     const existingImage = document.getElementById('displayedImage');
     if (existingImage) {
         existingImage.remove();
     }
-    // Show media container, hide placeholder
     document.getElementById('main-content-placeholder').classList.add('hidden');
-    document.getElementById('container').style.display = 'block'; // Or 'relative' if that's its usual display
+    document.getElementById('container').style.display = 'block'; 
     video.style.display = 'block';
     canvas.style.display = 'block';
-    video.controls = false; // Camera stream doesn't need default controls
+    video.controls = false; 
 
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
             video.srcObject = stream;
-            video.controls = false; // Ensure default controls are off for camera
-            video.play(); // Explicitly call play
+            video.controls = false; 
+            video.play(); 
         } catch (err) {
             console.error("Error accessing the camera: ", err);
-            // Handle specific errors or display a message to the user
             if (err.name === "NotAllowedError") {
                 showToast("摄像头访问被拒绝。请允许访问以使用此功能。", 'warning');
             } else if (err.name === "NotFoundError") {
@@ -493,16 +437,14 @@ stopButton.addEventListener('click', () => {
         video.srcObject = null;
     }
     isDetecting = false;
-    context.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas when stopping
-    objectList.innerHTML = ''; // Clear object list when stopping
-    const imageSummaryListElement = document.getElementById('imageSummaryList'); // Added
-    if (imageSummaryListElement) imageSummaryListElement.innerHTML = ''; // Added
+    context.clearRect(0, 0, canvas.width, canvas.height); 
+    objectList.innerHTML = ''; 
+    const imageSummaryListElement = document.getElementById('imageSummaryList'); 
+    if (imageSummaryListElement) imageSummaryListElement.innerHTML = ''; 
 });
 
 video.addEventListener('play', () => {
-    // This listener is now primarily for the camera stream.
-    // Uploaded video detection is handled by `onloadeddata` in `handleVideoUpload`.
-    if (video.srcObject) { // Only act if it's a camera stream
+    if (video.srcObject) { 
         console.log("Camera stream playing. Setting canvas and starting detection.");
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
@@ -516,60 +458,52 @@ video.addEventListener('play', () => {
 function handleVideoUpload(event) {
     const file = event.target.files[0];
     if (file) {
-        // 1. Stop any existing camera stream and detection
         if (video.srcObject) {
             const stream = video.srcObject;
             const tracks = stream.getTracks();
             tracks.forEach(track => track.stop());
             video.srcObject = null;
         }
-        // Clear previous object URL if one exists from a prior upload
         if (video.src && video.src.startsWith('blob:')) {
             URL.revokeObjectURL(video.src);
             console.log("Revoked old object URL from previous file upload.");
-            video.src = ""; // Clear src
+            video.src = ""; 
         }
-        // Clear batch image results and summary list
         batchImageResults = [];
         const imageSummaryList = document.getElementById('imageSummaryList');
         if (imageSummaryList) imageSummaryList.innerHTML = '';
-        document.getElementById('objectList').innerHTML = ''; // Also clear main object list
+        document.getElementById('objectList').innerHTML = ''; 
 
-        // Hide/remove existing image if any
         const existingImage = document.getElementById('displayedImage');
         if (existingImage) {
             existingImage.remove();
         }
-    // Show media container, hide placeholder
     document.getElementById('main-content-placeholder').classList.add('hidden');
     document.getElementById('container').style.display = 'block';
     video.style.display = 'block';
     canvas.style.display = 'block';
-        // video.controls = true; // controls are set below
 
         isDetecting = false;
         context.clearRect(0, 0, canvas.width, canvas.height);
         objectList.innerHTML = '';
 
-        // 2. Create an object URL for the selected file
         const fileURL = URL.createObjectURL(file);
-        video.src = fileURL; // Set video source to the file
-        video.controls = true; // Show default video controls for uploaded video
+        video.src = fileURL; 
+        video.controls = true; 
 
-        // 3. When the video data is loaded, set canvas size and start detection
         video.onloadeddata = () => {
             console.log("Video data loaded. Setting canvas and starting detection.");
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-            isDetecting = true; // Set before calling detectObjects
-            detectObjects(); // Start detection for the uploaded video
-            video.play(); // Start playing the video
+            isDetecting = true; 
+            detectObjects(); 
+            video.play(); 
         };
 
         video.onended = () => {
             console.log("Video ended.");
             isDetecting = false;
-            if (video.src && video.src.startsWith('blob:')) { // Check if it's an object URL
+            if (video.src && video.src.startsWith('blob:')) { 
                 URL.revokeObjectURL(video.src);
                 console.log("Revoked object URL on video end.");
             }
@@ -579,20 +513,19 @@ function handleVideoUpload(event) {
 
 videoUpload.addEventListener('change', handleVideoUpload);
 
-async function handleImageUpload(event) { // Make it async
+async function handleImageUpload(event) { 
     const files = event.target.files;
     if (!files.length) {
         return;
     }
 
-    // A. Stop any ongoing video/camera activity and clear main displays
-    if (video.srcObject) { // Stop camera stream
+    if (video.srcObject) { 
         const stream = video.srcObject;
         const tracks = stream.getTracks();
         tracks.forEach(track => track.stop());
         video.srcObject = null;
     }
-    if (video.src && video.src.startsWith('blob:')) { // Clear uploaded video
+    if (video.src && video.src.startsWith('blob:')) { 
         URL.revokeObjectURL(video.src);
         video.src = "";
     }
@@ -602,30 +535,25 @@ async function handleImageUpload(event) { // Make it async
     if (existingMainImage) {
         existingMainImage.remove();
     }
-    isDetecting = false; // Stop any video detection loops
+    isDetecting = false; 
     context.clearRect(0, 0, canvas.width, canvas.height);
-    // objectList.innerHTML = ''; // We'll clear/repopulate this for summaries later
 
-    // B. Clear previous batch results
     batchImageResults = [];
-    const imageSummaryList = document.getElementById('imageSummaryList'); // Assuming a new UL for summaries
+    const imageSummaryList = document.getElementById('imageSummaryList'); 
     if (imageSummaryList) {
-        imageSummaryList.innerHTML = ''; // Clear old summaries
+        imageSummaryList.innerHTML = ''; 
     } else {
-        // If not using a dedicated summary list yet, clear the main objectList for now
         objectList.innerHTML = '';
     }
-    // Also clear the main #objectList if it's being used for detailed results of a single image
     document.getElementById('objectList').innerHTML = '';
 
 
     console.log(`Processing ${files.length} image(s)...`);
-    // TODO: Show a loading indicator to the user
 
     for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const fileName = file.name;
-        const imageId = `batchImage-${Date.now()}-${i}`; // Unique ID
+        const imageId = `batchImage-${Date.now()}-${i}`; 
 
         try {
             const dataURL = await new Promise((resolve, reject) => {
@@ -635,10 +563,9 @@ async function handleImageUpload(event) { // Make it async
                 reader.readAsDataURL(file);
             });
 
-            // Create a temporary image element to perform detection (not displayed in main view yet)
             const tempImg = document.createElement('img');
             tempImg.src = dataURL;
-            await new Promise(resolve => tempImg.onload = resolve); // Wait for image to load its dimensions
+            await new Promise(resolve => tempImg.onload = resolve); 
 
             const predictions = await performImageDetection(tempImg);
 
@@ -646,41 +573,32 @@ async function handleImageUpload(event) { // Make it async
                 id: imageId,
                 fileName: fileName,
                 dataURL: dataURL,
-                predictions: predictions || [] // Ensure predictions is an array
+                predictions: predictions || [] 
             });
 
             console.log(`Processed and stored: ${fileName}`);
 
-            // TODO (next step): Update UI with this image's summary
-            // updateImageSummaryList(batchImageResults[batchImageResults.length-1]);
-
         } catch (error) {
             console.error(`Error processing file ${fileName}:`, error);
-            // Optionally store error info or skip file
         }
     }
 
     console.log("All images processed. Batch results:", batchImageResults);
-    // TODO: Hide loading indicator
-    // TODO (next step): Display the first image or a default message if no images.
-    // For now, just log. The next step will handle displaying summaries.
-    displayImageSummaries(); // New call
+    displayImageSummaries(); 
 
     if (batchImageResults.length > 0) {
-        // Placeholder remains visible. User needs to click a summary.
         document.getElementById('main-content-placeholder').classList.remove('hidden');
-        document.getElementById('container').style.display = 'none'; // Keep media container hidden
+        document.getElementById('container').style.display = 'none'; 
         canvas.style.display = 'none';
         const existingMainImage = document.getElementById('displayedImage');
-        if (existingMainImage) existingMainImage.remove(); // Ensure no old main image
+        if (existingMainImage) existingMainImage.remove(); 
         context.clearRect(0,0, canvas.width, canvas.height);
         document.getElementById('objectList').innerHTML = '<li class="text-gray-500">从摘要列表选择图片查看详情。</li>';
     } else {
-        // No images processed, show placeholder
         document.getElementById('main-content-placeholder').classList.remove('hidden');
         document.getElementById('container').style.display = 'none';
         canvas.style.display = 'none';
-        document.getElementById('objectList').innerHTML = ''; // Or a "no images processed" message
+        document.getElementById('objectList').innerHTML = ''; 
     }
 }
 
@@ -693,11 +611,11 @@ async function performImageDetection(imgElement) {
     }
 
     console.log("Performing detection on image:", imgElement.id || imgElement.src.substring(0,30));
-    let predictions = []; // Initialize predictions
+    let predictions = []; 
 
     try {
         if (activeModel.instance.modelType === "yoloV5s") {
-            const modelInputShape = activeModel.instance.inputShape.slice(1, 3); // e.g., [640, 640]
+            const modelInputShape = activeModel.instance.inputShape.slice(1, 3); 
             const { tensor: inputTensor, letterboxInfo } = preprocessInputYoloV5s(imgElement, modelInputShape);
             
             const rawOutputTensor = await activeModel.instance.executeAsync(inputTensor);
@@ -711,7 +629,7 @@ async function performImageDetection(imgElement) {
                 imgElement.naturalHeight,
                 letterboxInfo,
                 currentConfidenceThreshold,
-                currentIouThreshold // ADD THIS
+                currentIouThreshold 
             );
             if (Array.isArray(rawOutputTensor)) {
                 for (let i = 1; i < rawOutputTensor.length; i++) {
@@ -719,26 +637,25 @@ async function performImageDetection(imgElement) {
                 }
             }
 
-        } else if (activeModel.instance.isGraphModel) { // For MobileNet SSD
+        } else if (activeModel.instance.isGraphModel) { 
             const inputTensor = preprocessInput(imgElement, activeModel.instance.inputShape);
             const outputTensors = await activeModel.instance.executeAsync(inputTensor);
             tf.dispose(inputTensor);
             predictions = await postprocessOutputMobileNetSsd(outputTensors, imgElement.naturalWidth, imgElement.naturalHeight, currentConfidenceThreshold);
         
-        } else if (activeModel.instance) { // For COCO-SSD
+        } else if (activeModel.instance) { 
             predictions = await activeModel.instance.detect(imgElement);
         }
         console.log("Image detection complete. Predictions:", predictions);
         return predictions;
     } catch (err) {
         console.error("Error during image object detection: ", err);
-        showToast("图片物体检测时发生错误。", 'error'); // Keep only one call
-        return null; // Return null on error
+        showToast("图片物体检测时发生错误。", 'error'); 
+        return null; 
     }
 }
 
 function preprocessInputYoloV5s(mediaElement, modelInputShape = [640, 640]) {
-    // modelInputShape is expected as [height, width] for model's square input
     const modelHeight = modelInputShape[0];
     const modelWidth = modelInputShape[1];
 
@@ -747,72 +664,105 @@ function preprocessInputYoloV5s(mediaElement, modelInputShape = [640, 640]) {
         const originalHeight = imgTensor.shape[0];
         const originalWidth = imgTensor.shape[1];
 
-        // Calculate aspect ratios
         const r = Math.min(modelHeight / originalHeight, modelWidth / originalWidth);
         const newUnpadWidth = Math.round(originalWidth * r);
         const newUnpadHeight = Math.round(originalHeight * r);
 
-        // Resize the image with aspect ratio maintained
         const resizedImg = tf.image.resizeBilinear(imgTensor, [newUnpadHeight, newUnpadWidth], true);
 
-        // Calculate padding
         const dw = (modelWidth - newUnpadWidth) / 2;
         const dh = (modelHeight - newUnpadHeight) / 2;
 
-        // Pad the image
-        // tf.pad takes paddings in the format [[top, bottom], [left, right], [channel_pad_before, channel_pad_after]]
-        // For RGB images, channels are not padded.
         const paddingTop = Math.floor(dh);
         const paddingBottom = Math.ceil(dh);
         const paddingLeft = Math.floor(dw);
         const paddingRight = Math.ceil(dw);
-
-        // Padding color (e.g., gray 114, 114, 114)
-        // To pad with a specific color, we might need to create a larger tensor of that color
-        // and then copy the resized image into it.
-        // Alternatively, tf.pad uses 0 for padding by default if 'constantValue' is not set or is 0.
-        // For YOLO, a common padding color is gray (114).
-        // If tf.pad's constantValue parameter supports per-channel or if the model is robust to 0-padding, it's simpler.
-        // Let's assume 0-padding for now if model is robust, or use a more complex method if 114 is strictly needed.
-        // The zldrobit/yolov5 TFJS model seems to be trained with 0-padding or implies it in its preprocessing.
-        // For a quick implementation, let's try padding with zeros first.
-        // If specific color padding (114) is essential, this part needs to be more complex:
-        // 1. Create a tensor of shape [modelHeight, modelWidth, 3] filled with 114.
-        // 2. Copy `resizedImg` onto this tensor at the correct offset.
-        // For now, using tf.pad with default (0) or specified constant value.
-        // The `constantValues` parameter for tf.pad in TFJS defaults to 0.
+        
         const paddedImg = tf.pad(
             resizedImg,
             [[paddingTop, paddingBottom], [paddingLeft, paddingRight], [0, 0]],
-            0 // Constant value for padding, 0 is often acceptable. Use 114 if required by specific model.
+            0 
         );
 
-        // Normalize to [0, 1] and add batch dimension
-        // The input tensor should be float32 for most models.
         const normalizedImg = paddedImg.toFloat().div(255.0);
-        const batchedImg = normalizedImg.expandDims(0); // Shape: [1, modelHeight, modelWidth, 3]
+        const batchedImg = normalizedImg.expandDims(0); 
 
-        // Store letterboxing info for postprocessing
-        // This info helps convert detected boxes back to original image coordinates.
         const letterboxInfo = {
             originalWidth,
             originalHeight,
-            paddedWidth: modelWidth, // width of the letterboxed image (model input width)
-            paddedHeight: modelHeight, // height of the letterboxed image (model input height)
-            ratio: r, // resize ratio
-            dw: dw, // width padding
-            dh: dh  // height padding
+            paddedWidth: modelWidth, 
+            paddedHeight: modelHeight, 
+            ratio: r, 
+            dw: dw, 
+            dh: dh  
         };
 
         return { tensor: batchedImg, letterboxInfo: letterboxInfo };
     });
 }
 
+function preprocessInput(mediaElement, modelInputShape = [1, 300, 300, 3]) {
+    const targetHeight = modelInputShape[1];
+    const targetWidth = modelInputShape[2];
+
+    return tf.tidy(() => {
+        let inputTensor = tf.browser.fromPixels(mediaElement);
+        const resizedTensor = tf.image.resizeBilinear(inputTensor, [targetHeight, targetWidth], true);
+        const floatInput = resizedTensor.toFloat();
+        const expandedTensor = floatInput.expandDims(0); 
+        return expandedTensor;
+    });
+}
+
+async function postprocessOutputMobileNetSsd(predictionOutputs, imageWidth, imageHeight, confidenceThreshold = 0.5) {
+    const boxesTensor = predictionOutputs[0];     
+    const classesTensor = predictionOutputs[1];   
+    const scoresTensor = predictionOutputs[2];    
+    const numDetectionsTensor = predictionOutputs[3]; 
+
+    const boxes = await boxesTensor.array(); 
+    const classes = await classesTensor.array();
+    const scores = await scoresTensor.array();
+    const numDetections = (await numDetectionsTensor.array())[0]; 
+
+    tf.dispose([boxesTensor, classesTensor, scoresTensor, numDetectionsTensor]); 
+
+    const N = numDetections; 
+    const outputPredictions = [];
+
+    for (let i = 0; i < N; i++) {
+        const score = scores[0][i];
+        if (score > confidenceThreshold) {
+            const classIndex = parseInt(classes[0][i]); 
+            const className = COCO_CLASSES[classIndex -1]; 
+
+            if (!className) {
+                console.warn(`Unknown class index: ${classIndex}`);
+                continue;
+            }
+
+            const [ymin, xmin, ymax, xmax] = boxes[0][i];
+            const bbox = [
+                xmin * imageWidth,  
+                ymin * imageHeight, 
+                (xmax - xmin) * imageWidth,  
+                (ymax - ymin) * imageHeight  
+            ];
+            outputPredictions.push({
+                class: className,
+                score: score,
+                bbox: bbox
+            });
+        }
+    }
+    return outputPredictions;
+}
+
 function displayImageSummaries() {
     const summaryListElement = document.getElementById('imageSummaryList');
     if (!summaryListElement) return;
 
-    summaryListElement.innerHTML = ''; // Clear previous summaries
+    summaryListElement.innerHTML = ''; 
 
     if (batchImageResults.length === 0) {
         summaryListElement.innerHTML = '<li class="text-gray-500">没有处理的图片。</li>';
@@ -822,23 +772,19 @@ function displayImageSummaries() {
     batchImageResults.forEach((result, index) => {
         const listItem = document.createElement('li');
         listItem.className = 'p-2 border rounded-md hover:bg-gray-200 cursor-pointer flex items-center space-x-2';
-        listItem.dataset.imageId = result.id; // Store unique ID for click handling
+        listItem.dataset.imageId = result.id; 
 
-        // Thumbnail
         const thumbnail = document.createElement('img');
         thumbnail.src = result.dataURL;
-        thumbnail.className = 'w-16 h-16 object-cover rounded'; // Tailwind for thumbnail size
+        thumbnail.className = 'w-16 h-16 object-cover rounded'; 
 
-        // Info Div
         const infoDiv = document.createElement('div');
         infoDiv.className = 'flex-1';
 
-        // File Name
         const fileNameP = document.createElement('p');
         fileNameP.className = 'text-sm font-medium truncate';
         fileNameP.textContent = result.fileName;
 
-        // Detection Summary
         const detectionSummaryP = document.createElement('p');
         detectionSummaryP.className = 'text-xs text-gray-600';
         if (result.predictions && result.predictions.length > 0) {
@@ -854,7 +800,6 @@ function displayImageSummaries() {
         listItem.appendChild(thumbnail);
         listItem.appendChild(infoDiv);
 
-        // TODO (next step): Add click listener to listItem to display details
         listItem.addEventListener('click', () => handleSummaryItemClick(result.id));
 
         summaryListElement.appendChild(listItem);
@@ -862,10 +807,10 @@ function displayImageSummaries() {
 }
 
 async function postprocessOutputYoloV5s(
-    rawOutputTensor,      // Single tensor, e.g., shape [1, 25200, 85]
+    rawOutputTensor,      
     originalImageWidth,
     originalImageHeight,
-    letterboxInfo,        // Contains { ratio, dw, dh, paddedWidth, paddedHeight }
+    letterboxInfo,        
     confidenceThreshold,
     iouThreshold = 0.45
 ) {
@@ -877,14 +822,12 @@ async function postprocessOutputYoloV5s(
     const outputData = await rawOutputTensor.array();
     tf.dispose(rawOutputTensor);
 
-    const numClasses = outputData[0][0].length - 5; // 5 => x,y,w,h,objectness
-    const allFilteredBoxes = []; // To store boxes that pass initial confidence for per-class NMS
+    const numClasses = outputData[0][0].length - 5; 
+    const allFilteredBoxes = []; 
 
-    // Step 1: Decode all boxes and filter by combined confidence (objectness * class_score)
     outputData[0].forEach(prediction => {
         const objectness = prediction[4];
         
-        // Find the class with the highest score for this box
         let maxClassScore = 0;
         let bestClassIndex = -1;
         for (let i = 0; i < numClasses; i++) {
@@ -898,24 +841,20 @@ async function postprocessOutputYoloV5s(
         const finalScore = objectness * maxClassScore;
 
         if (finalScore > confidenceThreshold) {
-            const cx = prediction[0]; // center_x relative to model input (e.g., 640x640)
-            const cy = prediction[1]; // center_y
-            const w = prediction[2];  // width
-            const h = prediction[3];  // height
+            const cx = prediction[0]; 
+            const cy = prediction[1]; 
+            const w = prediction[2];  
+            const h = prediction[3];  
 
-            // Convert to [y1, x1, y2, x2] for tf.image.nonMaxSuppressionAsync
-            // These are still normalized to model input size (e.g., 640x640)
             const y1 = cy - h / 2;
             const x1 = cx - w / 2;
             const y2 = cy + h / 2;
             const x2 = cx + w / 2;
 
             allFilteredBoxes.push({
-                boxCoords: [y1, x1, y2, x2], // Correct order for NMS
+                boxCoords: [y1, x1, y2, x2], 
                 score: finalScore,
                 classIndex: bestClassIndex,
-                // Store original cx,cy,w,h if needed for later, or recalculate from y1,x1,y2,x2
-                // For simplicity, we'll use y1,x1,y2,x2 to reconstruct for final output if needed
             });
         }
     });
@@ -926,10 +865,8 @@ async function postprocessOutputYoloV5s(
     }
     console.log(`YOLOv5 Postprocessing: ${allFilteredBoxes.length} boxes passed initial confidence before per-class NMS.`);
 
-    // Step 2: Perform Per-Class NMS
     const finalPredictions = [];
     for (let c = 0; c < numClasses; c++) {
-        // Filter boxes belonging to the current class 'c'
         const classSpecificBoxes = allFilteredBoxes.filter(b => b.classIndex === c);
         if (classSpecificBoxes.length === 0) {
             continue;
@@ -940,11 +877,11 @@ async function postprocessOutputYoloV5s(
 
         if (boxesForNMS.length > 0) {
             const nmsResultIndices = await tf.image.nonMaxSuppressionAsync(
-                boxesForNMS,       // tensor2d of shape [numBoxes, 4] with [y1,x1,y2,x2]
-                scoresForNMS,      // tensor1d of shape [numBoxes]
-                100,               // maxOutputSize: Max number of boxes to select per class.
-                iouThreshold,      // iouThreshold
-                confidenceThreshold// scoreThreshold (can re-apply, or rely on initial filter)
+                boxesForNMS,       
+                scoresForNMS,      
+                100,               
+                iouThreshold,      
+                confidenceThreshold
             );
 
             const selectedIndicesForClass = await nmsResultIndices.array();
@@ -954,10 +891,8 @@ async function postprocessOutputYoloV5s(
                 const selectedBoxInfo = classSpecificBoxes[selectedIndex];
                 const className = COCO_CLASSES[selectedBoxInfo.classIndex];
 
-                // boxCoords are [y1_model, x1_model, y2_model, x2_model] normalized to model input
                 let [y1_model_norm, x1_model_norm, y2_model_norm, x2_model_norm] = selectedBoxInfo.boxCoords;
                 
-                // Adjust for letterbox padding and ratio to get coordinates in original image space
                 const x1_orig = (x1_model_norm * letterboxInfo.paddedWidth - letterboxInfo.dw) / letterboxInfo.ratio;
                 const y1_orig = (y1_model_norm * letterboxInfo.paddedHeight - letterboxInfo.dh) / letterboxInfo.ratio;
                 const x2_orig = (x2_model_norm * letterboxInfo.paddedWidth - letterboxInfo.dw) / letterboxInfo.ratio;
@@ -969,8 +904,8 @@ async function postprocessOutputYoloV5s(
                     bbox: [
                         x1_orig,
                         y1_orig,
-                        x2_orig - x1_orig, // width
-                        y2_orig - y1_orig  // height
+                        x2_orig - x1_orig, 
+                        y2_orig - y1_orig  
                     ]
                 });
             });
@@ -988,67 +923,52 @@ function handleSummaryItemClick(imageId) {
         return;
     }
 
-    // 0. Stop any ongoing video/camera activity and clear related displays
-    if (video.srcObject) { // Stop camera stream
+    if (video.srcObject) { 
         const stream = video.srcObject;
         const tracks = stream.getTracks();
         tracks.forEach(track => track.stop());
         video.srcObject = null;
     }
-    if (video.src && video.src.startsWith('blob:')) { // Clear uploaded video
+    if (video.src && video.src.startsWith('blob:')) { 
         URL.revokeObjectURL(video.src);
         video.src = "";
     }
-    video.style.display = 'none'; // Hide video element
+    video.style.display = 'none'; 
     video.controls = false;
-    isDetecting = false; // Stop any video detection loops
+    isDetecting = false; 
 
-    // 1. Clear previous main image if any
     const existingMainImage = document.getElementById('displayedImage');
     if (existingMainImage) {
         existingMainImage.remove();
     }
-    // Ensure video element is hidden if we are showing an image
     document.getElementById('video').style.display = 'none';
 
-    // Show media container, hide placeholder
     document.getElementById('main-content-placeholder').classList.add('hidden');
     const videoContainer = document.getElementById('container');
-    videoContainer.style.display = 'block'; // Show the media container
+    videoContainer.style.display = 'block'; 
 
 
-    // 2. Display the selected image in the main content area
     const img = document.createElement('img');
-    img.id = 'displayedImage'; // Use the same ID for consistency
+    img.id = 'displayedImage'; 
     img.src = selectedResult.dataURL;
-    img.className = 'w-full h-full object-contain'; // Match styling of single image display
-
-    // const videoContainer = document.getElementById('container'); // Parent of video/canvas - already defined
-    // videoContainer.style.display = 'block'; // Ensure #container is visible - already done
-    // Ensure canvas is a direct child of 'container' or its positioning is correct relative to 'img'
-    videoContainer.appendChild(img); // Add image to the container
+    img.className = 'w-full h-full object-contain'; 
+    videoContainer.appendChild(img); 
 
     img.onload = () => {
-        // 3. Adjust canvas size
         canvas.width = img.naturalWidth;
         canvas.height = img.naturalHeight;
-        canvas.style.display = 'block'; // Make sure canvas is visible over the image
+        canvas.style.display = 'block'; 
 
-        // 4. Draw detection results for this image
-        //    The predictions are already stored in selectedResult.predictions
-        currentMainMediaPredictions = selectedResult.predictions || []; // STORE HERE
-        drawResults(currentMainMediaPredictions); // Initial draw with current (possibly old) threshold
+        currentMainMediaPredictions = selectedResult.predictions || []; 
+        drawResults(currentMainMediaPredictions); 
 
-        // 5. Update the main #objectList with details for THIS image
-        //    drawResults already clears and populates objectList based on the predictions it receives.
         console.log(`Displaying details for ${selectedResult.fileName}`);
     };
 
-    // Optional: Highlight the selected item in the summary list
     const summaryListItems = document.querySelectorAll('#imageSummaryList li');
     summaryListItems.forEach(item => {
         if (item.dataset.imageId === imageId) {
-            item.classList.add('bg-blue-200', 'ring-2', 'ring-blue-500'); // Example highlight
+            item.classList.add('bg-blue-200', 'ring-2', 'ring-blue-500'); 
         } else {
             item.classList.remove('bg-blue-200', 'ring-2', 'ring-blue-500');
         }
@@ -1057,4 +977,102 @@ function handleSummaryItemClick(imageId) {
 
 
 // Load the model when the script loads
-loadModel();
+// loadModel(); // Replaced by DOMContentLoaded logic
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Event listeners for model selector buttons
+    const modelSelectorButtons = document.querySelectorAll('.model-selector-btn');
+    modelSelectorButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const modelNameFromButton = button.dataset.modelName; 
+            if (activeModel.name !== modelNameFromButton && !activeModel.isLoading) {
+                clearAllMediaAndResults(); 
+                loadSelectedModel(modelNameFromButton);
+            } else if (activeModel.isLoading) {
+                console.log("Model loading is already in progress.");
+            } else {
+                console.log(`${modelNameFromButton} is already the active model.`);
+            }
+        });
+    });
+
+    // Initial model load (default: COCO-SSD)
+    (async () => { // IIFE to use async/await
+        try {
+            console.log("DOMContentLoaded: Attempting to load default model...");
+            await loadSelectedModel("cocoSsd");
+            console.log("DOMContentLoaded: Default model loading process initiated.");
+            // setLoadingState and updateModelSelectorUI are called within loadSelectedModel
+            // Check final state after attempt:
+            if (activeModel.instance && !activeModel.error) {
+                 document.getElementById('model-loading-status').textContent = activeModel.name + ' 已准备好。请选择媒体。';
+            } else if (activeModel.error) {
+                console.error("DOMContentLoaded: Default model failed to load.", activeModel.error);
+            }
+        } catch (err) {
+            console.error("DOMContentLoaded: Critical error during initial model load sequence:", err);
+            showToast(`初始化加载模型时发生严重错误: ${err.message}`, 'error', 7000);
+            setLoadingState(false, '模型初始化失败!');
+            updateModelSelectorUI(null);
+        }
+    })(); 
+
+    // Initialize confidence slider
+    confidenceSlider = document.getElementById('confidenceSlider');
+    confidenceValueDisplay = document.getElementById('confidenceValue');
+
+    if (confidenceSlider && confidenceValueDisplay) {
+        confidenceSlider.value = currentConfidenceThreshold * 100;
+        confidenceValueDisplay.textContent = `${Math.round(currentConfidenceThreshold * 100)}%`;
+
+        confidenceSlider.addEventListener('input', (event) => {
+            currentConfidenceThreshold = parseInt(event.target.value) / 100;
+            confidenceValueDisplay.textContent = `${event.target.value}%`;
+
+            const displayedImage = document.getElementById('displayedImage');
+            if (displayedImage && displayedImage.style.display !== 'none') {
+                drawResults(currentMainMediaPredictions); 
+            } else if (isDetecting && (video.srcObject || (video.src && !video.paused))) {
+                // console.log("Threshold changed for video, will apply on next frame.");
+            }
+        });
+    }
+
+    // Initialize IoU slider
+    iouSlider = document.getElementById('iouSlider');
+    iouValueDisplay = document.getElementById('iouValue');
+
+    if (iouSlider && iouValueDisplay) {
+        iouSlider.value = currentIouThreshold;
+        iouValueDisplay.textContent = parseFloat(currentIouThreshold).toFixed(2);
+
+        iouSlider.addEventListener('input', (event) => {
+            currentIouThreshold = parseFloat(event.target.value);
+            iouValueDisplay.textContent = currentIouThreshold.toFixed(2);
+
+            const displayedImage = document.getElementById('displayedImage');
+            if (activeModel.instance && activeModel.modelType === "yoloV5s" &&
+                displayedImage && displayedImage.style.display !== 'none') {
+                
+                console.log("IoU changed for YOLOv5s image, re-detecting...");
+                performImageDetection(displayedImage).then(predictions => {
+                    if (predictions) {
+                        currentMainMediaPredictions = predictions; 
+                        drawResults(predictions); 
+                    }
+                });
+
+            } else if (isDetecting && activeModel.instance && activeModel.modelType === "yoloV5s" &&
+                       (video.srcObject || (video.src && !video.paused))) {
+            }
+        });
+    }
+});
+
+[end of script.js]
+
+[end of script.js]
+
+[end of script.js]
+
+[end of script.js]

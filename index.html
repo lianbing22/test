@@ -1,187 +1,25 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 视频分析</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.3/dist/tailwind.min.css" rel="stylesheet">
+    <title>AI Video Analysis</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="flex flex-col h-screen font-sans"> <!-- Tailwind: full height, column flex, sans-serif font -->
-
-    <!-- Top Navigation Bar -->
-    <header class="bg-blue-600 text-white p-4 shadow-md"> <!-- Tailwind: blue background, white text, padding, shadow -->
-        <h1 class="text-lg sm:text-xl">AI 视频/图像分析平台</h1> <!-- Tailwind: large text -->
-    </header>
-
-    <!-- Main Content Area -->
-    <main class="flex flex-col sm:flex-row flex-1 overflow-hidden"> <!-- Tailwind: flex grow, hide overflow -->
-
-        <!-- Left Control Panel -->
-        <aside id="left-panel" class="w-full sm:w-1/4 bg-gray-100 p-4 overflow-y-auto order-1 sm:order-none"> <!-- Tailwind: 1/4 width, light gray bg, padding, vertical scroll -->
-            <h2 class="text-lg font-semibold mb-4">控制面板</h2>
-            <div id="controls-container">
-                <!-- Existing buttons will be moved here later -->
-                <button id="startButton" disabled class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mb-2 w-full">启动摄像头</button>
-                <button id="stopButton" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded w-full">停止摄像头</button>
-            </div>
-            <!-- Placeholder for future controls like file input -->
-            <div id="file-upload-container" class="mt-4">
-                <label for="videoUpload" class="block mb-2 text-sm font-medium text-gray-900">上传视频文件 (MP4, MOV):</label>
-                <input type="file" id="videoUpload" accept="video/mp4,video/mov,video/webm" class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none">
-            </div>
-            <div id="image-upload-container" class="mt-4">
-                <label for="imageUpload" class="block mb-2 text-sm font-medium text-gray-900">上传图片文件 (JPG, PNG, WebP):</label>
-                <input type="file" id="imageUpload" accept="image/jpeg,image/png,image/webp" multiple class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none">
-            </div>
-
-            <!-- Model Selector -->
-            <div id="model-selector-container" class="mt-6">
-                <h3 class="text-md font-semibold mb-3 text-gray-800">选择分析模型:</h3>
-                <div class="space-y-2">
-                    <!-- COCO-SSD Model Option -->
-                    <button 
-                        id="model-cocoSsd" 
-                        data-model-name="cocoSsd"
-                        class="model-selector-btn w-full text-left p-3 border border-gray-300 rounded-lg shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-blue-100 ring-2 ring-blue-500 relative" 
-                        aria-pressed="true"
-                    >
-                        <div class="flex items-center justify-between">
-                            <span class="font-medium text-sm text-gray-900 model-name-text">COCO-SSD</span>
-                            <svg id="checkmark-cocoSsd" class="w-5 h-5 text-blue-600 checkmark-icon" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                            </svg>
-                        </div>
-                        <p class="text-xs text-gray-600 mt-1 model-desc-text">速度与精度均衡，通用物体检测。</p>
-                        <div class="model-loading-indicator absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-80 hidden">
-                            <svg class="animate-spin h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span class="text-xs text-blue-600 mt-1 loading-percentage"></span>
-                        </div>
-                    </button>
-
-                    <!-- MobileNet SSD Model Option -->
-                    <button 
-                        id="model-mobileNetSsd" 
-                        data-model-name="mobileNetSsd"
-                        class="model-selector-btn w-full text-left p-3 border border-gray-300 rounded-lg shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-white relative"
-                        aria-pressed="false"
-                    >
-                        <div class="flex items-center justify-between">
-                            <span class="font-medium text-sm text-gray-900 model-name-text">MobileNet SSD</span>
-                             <svg id="checkmark-mobileNetSsd" class="w-5 h-5 text-blue-600 checkmark-icon hidden" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                            </svg>
-                        </div>
-                        <p class="text-xs text-gray-600 mt-1 model-desc-text">轻量快速，适合移动端和边缘设备。</p>
-                        <div class="model-loading-indicator absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-80 hidden">
-                            <svg class="animate-spin h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span class="text-xs text-blue-600 mt-1 loading-percentage"></span>
-                        </div>
-                    </button>
-                    
-                    <!-- YOLOv5s Model Option -->
-                    <button 
-                        id="model-yoloV5s" 
-                        data-model-name="yoloV5s"
-                        class="model-selector-btn w-full text-left p-3 border border-gray-300 rounded-lg shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-white relative"
-                        aria-pressed="false"
-                    >
-                        <div class="flex items-center justify-between">
-                            <span class="font-medium text-sm text-gray-900 model-name-text">YOLOv5s</span>
-                            <svg id="checkmark-yoloV5s" class="w-5 h-5 text-blue-600 checkmark-icon hidden" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                            </svg>
-                        </div>
-                        <p class="text-xs text-gray-600 mt-1 model-desc-text">高精度模型，推荐在GPU环境使用。</p>
-                        <div class="model-loading-indicator absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-80 hidden">
-                            <svg class="animate-spin h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span class="text-xs text-blue-600 mt-1 loading-percentage"></span>
-                        </div>
-                    </button>
-                </div>
-                <p id="model-loading-status" class="text-xs text-gray-500 mt-2 h-4"></p> <!-- For loading status messages -->
-            </div>
-
-            <!-- Confidence Threshold Slider -->
-            <div id="confidence-threshold-container" class="mt-6">
-                <label for="confidenceSlider" class="block mb-1 text-sm font-medium text-gray-800">置信度阈值:</label>
-                <div class="flex items-center space-x-2">
-                    <input 
-                        type="range" 
-                        id="confidenceSlider" 
-                        min="0" 
-                        max="100" 
-                        value="50" 
-                        class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
-                    >
-                    <span id="confidenceValue" class="text-sm text-gray-700 w-10 text-right">50%</span>
-                </div>
-            </div>
-
-            <!-- IoU Threshold Slider -->
-            <div id="iou-threshold-container" class="mt-4"> <!-- Added some margin-top -->
-                <label for="iouSlider" class="block mb-1 text-sm font-medium text-gray-800">IoU 阈值 (用于NMS):</label>
-                <div class="flex items-center space-x-2">
-                    <input 
-                        type="range" 
-                        id="iouSlider" 
-                        min="0" 
-                        max="1" 
-                        step="0.01" 
-                        value="0.45" 
-                        class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
-                    >
-                    <span id="iouValue" class="text-sm text-gray-700 w-12 text-right">0.45</span> <!-- Wider span for float values like 0.XX -->
-                </div>
-            </div>
-        </aside>
-
-        <!-- Central Video/Image Area -->
-        <section id="main-content" class="flex-1 p-2 sm:p-4 flex flex-col items-center justify-center bg-gray-200 order-2 sm:order-none"> <!-- Tailwind: flex grow, padding, center content, medium gray bg -->
-            <div id="main-content-placeholder" class="text-center text-gray-500 my-auto hidden"> <!-- Initially hidden -->
-                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <h3 class="mt-2 text-sm font-medium text-gray-900">无活动媒体</h3>
-                <p class="mt-1 text-sm text-gray-500">请从左侧选择输入源或上传文件。</p>
-            </div>
-            <div id="container" class="relative w-full sm:max-w-3xl aspect-video bg-black"> <!-- Tailwind: relative, full width, max width, aspect ratio for video, black bg -->
-                <video id="video" autoplay playsinline class="w-full h-full"></video> <!-- Tailwind: full width and height -->
-                <canvas id="canvas" class="absolute top-0 left-0"></canvas> <!-- Tailwind: absolute positioning -->
-            </div>
-        </section>
-
-        <!-- Right Results Panel -->
-        <aside id="right-panel" class="w-full sm:w-1/4 bg-gray-100 p-4 overflow-y-auto order-3 sm:order-none"> <!-- Tailwind: 1/4 width, light gray bg, padding, vertical scroll -->
-            <h2 id="image-summary-header" class="text-lg font-semibold mb-2">图片处理结果摘要:</h2> <!-- New Header -->
-            <ul id="imageSummaryList" class="space-y-2 mb-4 max-h-48 sm:max-h-60 overflow-y-auto border border-gray-300 p-2 rounded">
-                <!-- Image summaries will be populated here by JavaScript -->
-            </ul>
-
-            <h2 id="results-header" class="text-lg font-semibold mb-2">当前选中媒体的检测详情:</h2> <!-- Modified Header for clarity -->
-            <ul id="objectList" class="space-y-1">
-                <!-- Detection details for the currently active media (video, single image, or selected batch image) -->
-            </ul>
-        </aside>
-
-    </main>
-
-    <script src="script.js"></script>
-
-    <!-- Toast Notification Container -->
-    <div id="toast-container" class="fixed top-5 right-5 space-y-2 z-50 w-full max-w-xs sm:max-w-sm">
-        <!-- Toasts will be dynamically added here by JavaScript -->
+<body>
+    <h1>AI Object Recognition</h1>
+    <div id="container">
+        <video id="video" autoplay playsinline></video>
+        <canvas id="canvas"></canvas>
     </div>
+    <div id="controls">
+        <button id="startButton">Start Camera</button>
+        <button id="stopButton">Stop Camera</button>
+    </div>
+    <div id="results">
+        <h2>Detected Objects:</h2>
+        <ul id="objectList"></ul>
+    </div>
+    <script src="script.js"></script>
 </body>
 </html>

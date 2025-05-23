@@ -1,35 +1,37 @@
-/* style.css */
 /* Keep this file minimal. Most styling should be done with Tailwind classes in HTML. */
 
-/* Canvas is positioned by Tailwind; dimensions by JS. No specific CSS needed here usually. */
-/* #canvas {} */
-
-/* Tailwind's default disabled:opacity-50 and specific background colors (e.g., bg-green-300) should be preferred.
-   If very specific non-Tailwind colors are needed, they can stay.
-   The example #startButton:disabled is now handled by Tailwind in index.html for the green button.
-   The #stopButton doesn't have a specific disabled style here, Tailwind would apply default.
-*/
-/*
-#startButton:disabled {
-    background-color: #90cdf4;
-    cursor: not-allowed;
-}
-*/
-
-/* Specific list item styling if Tailwind's space-y or divide-y is not sufficient.
-   The current index.html uses space-y-2 on #objectList.
-   The example styles for #objectList li are now mostly covered by Tailwind.
-*/
 #objectList li {
-    /* Example: if you had a very specific border or background for list items beyond Tailwind */
-    /* border-bottom: 1px dashed #ccc; */ /* Tailwind 'divide-y divide-dashed' could do this */
-    padding: 4px; /* Tailwind 'p-1' is similar */
-    /* background-color: #f9f9f9; */ /* Tailwind 'bg-gray-50' is similar */
-    /* Retaining a slightly different background for demonstration if needed, but prefer Tailwind */
+    padding: 4px; 
 }
 
-/* Remove body, h1, #container, #video, #controls, #results styles as they are handled by Tailwind */
-/* For example, body styling is now on the <body> tag: class="flex flex-col h-screen font-sans" */
-/* h1 is styled with text-xl in the header */
-/* #container has relative w-full max-w-3xl aspect-video bg-black */
-/* etc. */
+/* Basic Toast Animation (if Tailwind JIT or animations are not fully configured for these specific classes) */
+/* These are very simple, replace with Tailwind's animation utilities if preferred and available */
+@keyframes fadeInRight {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes fadeOutRight {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+}
+
+.animate-fade-in-right {
+    animation: fadeInRight 0.5s ease-out forwards;
+}
+
+.animate-fade-out-right {
+    animation: fadeOutRight 0.5s ease-in forwards;
+}
