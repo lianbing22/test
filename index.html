@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Video Analysis</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>AI Object Recognition</h1>
+    <div id="container">
+        <video id="video" autoplay playsinline></video>
+        <canvas id="canvas"></canvas>
+    </div>
+    <div id="controls">
+        <button id="startButton" disabled>Start Camera</button>
+        <button id="stopButton">Stop Camera</button>
+    </div>
+    <div id="results">
+        <h2>Detected Objects:</h2>
+        <ul id="objectList"></ul>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
