@@ -45,48 +45,69 @@
                     <button 
                         id="model-cocoSsd" 
                         data-model-name="cocoSsd"
-                        class="model-selector-btn w-full text-left p-3 border border-gray-300 rounded-lg shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-blue-100 ring-2 ring-blue-500" 
-                        aria-pressed="true" <!-- Indicates this is initially selected -->
+                        class="model-selector-btn w-full text-left p-3 border border-gray-300 rounded-lg shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-blue-100 ring-2 ring-blue-500 relative" 
+                        aria-pressed="true"
                     >
                         <div class="flex items-center justify-between">
-                            <span class="font-medium text-sm text-gray-900">COCO-SSD</span>
-                            <svg id="checkmark-cocoSsd" class="w-5 h-5 text-blue-600" viewBox="0 0 20 20" fill="currentColor"> <!-- Visible checkmark for selected -->
+                            <span class="font-medium text-sm text-gray-900 model-name-text">COCO-SSD</span>
+                            <svg id="checkmark-cocoSsd" class="w-5 h-5 text-blue-600 checkmark-icon" viewBox="0 0 20 20" fill="currentColor">
                                 <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                             </svg>
                         </div>
-                        <p class="text-xs text-gray-600 mt-1">速度与精度均衡，通用物体检测。</p>
+                        <p class="text-xs text-gray-600 mt-1 model-desc-text">速度与精度均衡，通用物体检测。</p>
+                        <div class="model-loading-indicator absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-80 hidden">
+                            <svg class="animate-spin h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span class="text-xs text-blue-600 mt-1 loading-percentage"></span>
+                        </div>
                     </button>
 
                     <!-- MobileNet SSD Model Option -->
                     <button 
                         id="model-mobileNetSsd" 
                         data-model-name="mobileNetSsd"
-                        class="model-selector-btn w-full text-left p-3 border border-gray-300 rounded-lg shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-white"
+                        class="model-selector-btn w-full text-left p-3 border border-gray-300 rounded-lg shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-white relative"
                         aria-pressed="false"
                     >
                         <div class="flex items-center justify-between">
-                            <span class="font-medium text-sm text-gray-900">MobileNet SSD</span>
-                             <svg id="checkmark-mobileNetSsd" class="w-5 h-5 text-blue-600 hidden" viewBox="0 0 20 20" fill="currentColor"> <!-- Hidden checkmark -->
+                            <span class="font-medium text-sm text-gray-900 model-name-text">MobileNet SSD</span>
+                             <svg id="checkmark-mobileNetSsd" class="w-5 h-5 text-blue-600 checkmark-icon hidden" viewBox="0 0 20 20" fill="currentColor">
                                 <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                             </svg>
                         </div>
-                        <p class="text-xs text-gray-600 mt-1">轻量快速，适合移动端和边缘设备。</p>
+                        <p class="text-xs text-gray-600 mt-1 model-desc-text">轻量快速，适合移动端和边缘设备。</p>
+                        <div class="model-loading-indicator absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-80 hidden">
+                            <svg class="animate-spin h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span class="text-xs text-blue-600 mt-1 loading-percentage"></span>
+                        </div>
                     </button>
                     
                     <!-- YOLOv5s Model Option -->
                     <button 
                         id="model-yoloV5s" 
                         data-model-name="yoloV5s"
-                        class="model-selector-btn w-full text-left p-3 border border-gray-300 rounded-lg shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-white"
+                        class="model-selector-btn w-full text-left p-3 border border-gray-300 rounded-lg shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors bg-white relative"
                         aria-pressed="false"
                     >
                         <div class="flex items-center justify-between">
-                            <span class="font-medium text-sm text-gray-900">YOLOv5s</span>
-                            <svg id="checkmark-yoloV5s" class="w-5 h-5 text-blue-600 hidden" viewBox="0 0 20 20" fill="currentColor"> <!-- Hidden checkmark -->
+                            <span class="font-medium text-sm text-gray-900 model-name-text">YOLOv5s</span>
+                            <svg id="checkmark-yoloV5s" class="w-5 h-5 text-blue-600 checkmark-icon hidden" viewBox="0 0 20 20" fill="currentColor">
                                 <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                             </svg>
                         </div>
-                        <p class="text-xs text-gray-600 mt-1">高精度模型，推荐在GPU环境使用。</p>
+                        <p class="text-xs text-gray-600 mt-1 model-desc-text">高精度模型，推荐在GPU环境使用。</p>
+                        <div class="model-loading-indicator absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-80 hidden">
+                            <svg class="animate-spin h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span class="text-xs text-blue-600 mt-1 loading-percentage"></span>
+                        </div>
                     </button>
                 </div>
                 <p id="model-loading-status" class="text-xs text-gray-500 mt-2 h-4"></p> <!-- For loading status messages -->
@@ -157,5 +178,10 @@
     </main>
 
     <script src="script.js"></script>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-5 right-5 space-y-2 z-50 w-full max-w-xs sm:max-w-sm">
+        <!-- Toasts will be dynamically added here by JavaScript -->
+    </div>
 </body>
 </html>

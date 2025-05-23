@@ -47,6 +47,72 @@ let currentMainMediaPredictions = []; // For re-drawing static images with new t
 // Function to load the COCO-SSD model (Replaced by initializeDefaultModel and loadSelectedModel)
 // async function loadModel() { ... }
 
+function showToast(message, type = 'info', duration = 5000) {
+    const container = document.getElementById('toast-container');
+    if (!container) {
+        console.error('Toast container not found!');
+        // Fallback to alert if container is missing (should not happen)
+        alert(`${type.toUpperCase()}: ${message}`);
+        return;
+    }
+
+    const toast = document.createElement('div');
+    toast.className = 'p-4 rounded-md shadow-lg flex items-center justify-between text-sm animate-fade-in-right'; // Base classes + animation
+
+    // Icon and Color based on type
+    let bgColor, textColor, iconSVG;
+    switch (type) {
+        case 'success':
+            bgColor = 'bg-green-500';
+            textColor = 'text-white';
+            iconSVG = `<svg class="w-5 h-5 mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>`;
+            break;
+        case 'error':
+            bgColor = 'bg-red-500';
+            textColor = 'text-white';
+            iconSVG = `<svg class="w-5 h-5 mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>`;
+            break;
+        case 'warning':
+            bgColor = 'bg-yellow-400'; // Softer yellow for better text contrast
+            textColor = 'text-gray-800'; // Darker text for yellow background
+            iconSVG = `<svg class="w-5 h-5 mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.216 3.031-1.742 3.031H4.42c-1.526 0-2.492-1.697-1.742-3.031l5.58-9.92zM10 13a1 1 0 110-2 1 1 0 010 2zm-1-3a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd"></path></svg>`;
+            break;
+        default: // info
+            bgColor = 'bg-blue-500';
+            textColor = 'text-white';
+            iconSVG = `<svg class="w-5 h-5 mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>`;
+            break;
+    }
+    toast.classList.add(bgColor, textColor);
+
+    const messageSpan = document.createElement('span');
+    messageSpan.innerHTML = iconSVG; // Add icon before message text
+    messageSpan.appendChild(document.createTextNode(message)); // Append text node
+    messageSpan.classList.add('flex', 'items-center');
+
+
+    const closeButton = document.createElement('button');
+    closeButton.innerHTML = '&times;';
+    closeButton.className = 'ml-4 text-xl font-semibold leading-none hover:opacity-75';
+    closeButton.onclick = () => {
+        toast.classList.add('animate-fade-out-right'); // Optional: add fade out animation class
+        setTimeout(() => toast.remove(), 300); // Remove after animation
+    };
+
+    toast.appendChild(messageSpan);
+    toast.appendChild(closeButton);
+    container.appendChild(toast);
+
+    // Auto-dismiss
+    setTimeout(() => {
+        // Check if toast still exists (user might have closed it manually)
+        if (toast.parentElement) {
+            toast.classList.add('animate-fade-out-right'); // Add fade out animation class
+            setTimeout(() => toast.remove(), 300); // Remove after animation
+        }
+    }, duration);
+}
+
 function updateModelSelectorUI(selectedModelName) {
     const buttons = document.querySelectorAll('.model-selector-btn');
     buttons.forEach(button => {
@@ -78,79 +144,137 @@ function setLoadingState(isLoading, message = "") {
 
     modelButtons.forEach(button => {
         button.disabled = isLoading;
+        const loadingIndicator = button.querySelector('.model-loading-indicator');
+        const percentageText = button.querySelector('.loading-percentage');
+
         if (isLoading) {
-            button.classList.add('opacity-50', 'cursor-not-allowed');
+            button.classList.add('opacity-75', 'cursor-not-allowed'); // Make it slightly opaque
+            if (loadingIndicator) {
+                loadingIndicator.classList.remove('hidden');
+                // For global loading state, hide percentage, show only spinner
+                if (percentageText) percentageText.textContent = ''; 
+                // Ensure spinner is visible (it's part of the indicator div)
+            }
         } else {
-            button.classList.remove('opacity-50', 'cursor-not-allowed');
+            button.classList.remove('opacity-75', 'cursor-not-allowed');
+            if (loadingIndicator) {
+                loadingIndicator.classList.add('hidden');
+            }
         }
     });
-    // Also disable/enable other main action buttons if needed
-    startButton.disabled = isLoading || (activeModel.instance === null); // Keep startButton disabled if no model or loading
+
+    // Disable/enable other main action buttons
+    startButton.disabled = isLoading || (activeModel.instance === null);
     videoUpload.disabled = isLoading;
     imageUpload.disabled = isLoading;
+    if (confidenceSlider) confidenceSlider.disabled = isLoading;
+    if (iouSlider) iouSlider.disabled = isLoading;
 }
 
 async function loadSelectedModel(modelName) {
-    if (activeModel.isLoading) {
-        console.log("Model loading already in progress.");
+    // If a model is already loading, or if the selected model is already active, do nothing.
+    // Note: The button click handler in DOMContentLoaded already checks 'activeModel.isLoading'
+    // and 'activeModel.name !== modelNameFromButton'.
+    // This is an additional safeguard within the function itself.
+    if (activeModel.isLoading && activeModel.name === modelName) {
+        console.log(`Loading for ${modelName} is already in progress.`);
         return;
     }
-    if (activeModel.name === modelName && activeModel.instance) {
-        console.log(`${modelName} is already loaded.`);
+     if (activeModel.name === modelName && activeModel.instance && !activeModel.isLoading) {
+        console.log(`${modelName} is already loaded and active.`);
         return;
     }
 
+    // Set the activeModel.name *before* calling setLoadingState
+    // This is so onProgress can correctly identify if its updates are for the current loading model.
+    activeModel.name = modelName; 
+    activeModel.isLoading = true; // Manually set isLoading before the first setLoadingState for this load cycle
+    activeModel.error = null;
+    activeModel.instance = null; // Clear previous instance
+    
     setLoadingState(true, `正在加载 ${modelName} 模型...`);
-    activeModel.error = null; // Clear previous error
+    updateModelSelectorUI(modelName); // Update UI to show this model is targeted for loading
 
     try {
         let newModelInstance;
-        if (modelName === "cocoSsd") {
-            newModelInstance = await cocoSsd.load();
-        } else if (modelName === "mobileNetSsd") {
-            // IMPORTANT: Replace with a valid TFJS GraphModel URL for MobileNet SSD
-            const modelUrl = 'https://tfhub.dev/tensorflow/tfjs-model/ssd_mobilenet_v2/coco/uint8/2/default/1/model.json?tfjs-format=graph-model'; // Example URL, ensure it's a GraphModel
-            // Note: MobileNet SSD from TF Hub might have different output signature than cocoSsd.load()
-            // This part will likely need adaptation in the 'detect' and 'drawResults' logic later.
-            newModelInstance = await tf.loadGraphModel(modelUrl);
-            // We'll need a way to know the model type for later detection logic
-            newModelInstance.isGraphModel = true; // Custom flag
-            newModelInstance.modelType = "mobileNetSsd"; // Specific type
-        } else if (modelName === "yoloV5s") {
-            // IMPORTANT: This is an example URL from a community-converted model.
-            // Its availability, correctness, and performance are not guaranteed.
-            // It might be necessary to find a more robust or self-hosted model URL.
-            // This model is expected to be a TFJS GraphModel.
-            const modelUrl = 'https://raw.githubusercontent.com/zldrobit/yolov5/tfjs_graph_model/model_yolov5s_tfjs/model.json';
-            
-            console.log(`Attempting to load YOLOv5s from: ${modelUrl}`);
-            newModelInstance = await tf.loadGraphModel(modelUrl);
-            newModelInstance.isGraphModel = true;
-            newModelInstance.modelType = "yoloV5s"; // Specific type for dispatching pre/post processing
-            // Common input shape for YOLOv5s is 640x640. This should be confirmed based on the model.
-            newModelInstance.inputShape = [1, 640, 640, 3]; // Format: [batch, height, width, channels]
-            console.log("YOLOv5s model loaded structure:", newModelInstance);
+        const currentModelButton = document.getElementById(`model-${modelName}`);
+        const percentageTextEl = currentModelButton ? currentModelButton.querySelector('.loading-percentage') : null;
 
-            // You might want to log model.inputs and model.outputs to understand its expected signature
-            // console.log("YOLOv5s inputs:", newModelInstance.inputs);
-            // console.log("YOLOv5s outputs:", newModelInstance.outputs);
+        if (modelName === "cocoSsd") {
+            if (percentageTextEl) percentageTextEl.textContent = ''; // COCO-SSD has no percentage
+            newModelInstance = await cocoSsd.load();
+        } else if (modelName === "mobileNetSsd" || modelName === "yoloV5s") {
+            let modelUrl;
+            if (modelName === "mobileNetSsd") {
+                modelUrl = 'https://tfhub.dev/tensorflow/tfjs-model/ssd_mobilenet_v2/coco/uint8/2/default/1/model.json?tfjs-format=graph-model';
+                newModelInstance = await tf.loadGraphModel(modelUrl, {
+                    onProgress: (fraction) => {
+                        // Check if this loading task is still the active one
+                        if (percentageTextEl && activeModel.isLoading && activeModel.name === modelName) {
+                            percentageTextEl.textContent = `${Math.round(fraction * 100)}%`;
+                        }
+                    }
+                });
+                newModelInstance.modelType = "mobileNetSsd";
+            } else { // yoloV5s
+                modelUrl = 'https://raw.githubusercontent.com/zldrobit/yolov5/tfjs_graph_model/model_yolov5s_tfjs/model.json';
+                newModelInstance = await tf.loadGraphModel(modelUrl, {
+                    onProgress: (fraction) => {
+                       if (percentageTextEl && activeModel.isLoading && activeModel.name === modelName) {
+                            percentageTextEl.textContent = `${Math.round(fraction * 100)}%`;
+                        }
+                    }
+                });
+                newModelInstance.modelType = "yoloV5s";
+                newModelInstance.inputShape = [1, 640, 640, 3];
+            }
+            newModelInstance.isGraphModel = true;
         } else {
             throw new Error(`未知模型: ${modelName}`);
         }
-
-        activeModel.name = modelName;
+        
+        // Check if another model loading was initiated while this one was loading
+        // activeModel.name would have been changed by the newer call to loadSelectedModel
+        if (activeModel.name !== modelName) {
+             console.warn(`Model loading for ${modelName} completed, but another model (${activeModel.name}) load was initiated. Discarding ${modelName}.`);
+             // newModelInstance might need disposal if tf.js doesn't handle it automatically when not assigned.
+             // However, standard TFJS models are usually managed by the tf.ENV.
+             // For explicit disposal if model has a dispose method (some TFJS models do, GraphModel generally doesn't need manual unless for specific layers)
+             if (newModelInstance && typeof newModelInstance.dispose === 'function') {
+                newModelInstance.dispose();
+             }
+             return; 
+        }
+            
+        // Successfully loaded the intended model
+        // activeModel.name = modelName; // Already set at the beginning of this load attempt
         activeModel.instance = newModelInstance;
+        activeModel.isLoading = false; // Mark loading as complete *before* final UI updates
         console.log(`${modelName} model loaded successfully.`);
-        setLoadingState(false, `${modelName} 加载完成!`);
-        updateModelSelectorUI(modelName);
+        
+        setLoadingState(false, `${modelName} 加载完成!`); // This will hide all spinners and enable buttons
+        // updateModelSelectorUI(modelName); // Already called when loading started to show target
+        // Final check on UI consistency, make sure correct button is highlighted
+        if (document.getElementById(`model-${modelName}`).getAttribute('aria-pressed') === 'false') {
+            updateModelSelectorUI(modelName);
+        }
+
 
     } catch (err) {
         console.error(`Error loading ${modelName} model: `, err);
-        activeModel.error = err;
-        activeModel.instance = null; // Ensure no stale model instance
-        // Don't reset activeModel.name, so UI can reflect which model failed to load
-        setLoadingState(false, `${modelName} 加载失败。请稍后再试或选择其他模型。`);
-        // updateModelSelectorUI(null); // Optionally clear selection or show error state on selector
+        
+        // Check if this error corresponds to the model that is currently supposed to be loading
+        if(activeModel.name === modelName) { 
+            activeModel.error = err;
+            activeModel.instance = null;
+            activeModel.isLoading = false; // Ensure loading state is reset
+            setLoadingState(false, `${modelName} 加载失败。`); 
+            updateModelSelectorUI(null); // No model is active or selected
+            showToast(`${modelName} 加载失败: ${err.message}`, 'error');
+        } else {
+             // A different model loading was already in progress or finished, this error is from a stale load.
+             console.warn(`Error for ${modelName} but active model is ${activeModel.name}. Ignoring stale error.`);
+        }
     }
 }
 
@@ -349,15 +473,15 @@ startButton.addEventListener('click', async () => {
             console.error("Error accessing the camera: ", err);
             // Handle specific errors or display a message to the user
             if (err.name === "NotAllowedError") {
-                alert("摄像头访问被拒绝。请允许访问以使用此功能。");
+                showToast("摄像头访问被拒绝。请允许访问以使用此功能。", 'warning');
             } else if (err.name === "NotFoundError") {
-                alert("未在您的设备上找到摄像头。");
+                showToast("未在您的设备上找到摄像头。", 'warning');
             } else {
-                alert("访问摄像头时发生错误：" + err.message);
+                showToast("访问摄像头时发生错误：" + err.message, 'error');
             }
         }
     } else {
-        alert("您的浏览器不支持 getUserMedia。");
+        showToast("您的浏览器不支持 getUserMedia。", 'error');
     }
 });
 
@@ -608,7 +732,7 @@ async function performImageDetection(imgElement) {
         return predictions;
     } catch (err) {
         console.error("Error during image object detection: ", err);
-        alert("图片物体检测时发生错误。");
+        showToast("图片物体检测时发生错误。", 'error'); // Keep only one call
         return null; // Return null on error
     }
 }
